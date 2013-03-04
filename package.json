@@ -1,0 +1,30 @@
+{
+  "name": "pirate",
+  "version": "0.0.0",
+  "description": "A simple storage interface with adapters for different storage systems",
+  "main": "index.coffee",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "fairmont": "~0.1.1",
+    "mongodb": "~1.2.13",
+    "mutual": "~0.0.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "coffee test/test.coffee"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/dyoder/pirate.git"
+  },
+  "keywords": [
+    "storage",
+    "interface",
+    "mongo"
+  ],
+  "author": "Dan Yoder",
+  "license": "MIT",
+  "readmeFilename": "README.md"
+}
