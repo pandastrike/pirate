@@ -10,6 +10,8 @@ The elements of the interface are:
 
 Pirate uses a library called [Mutual][0] to provide a simple event-based interface. Each method returns an `events` object to which event handlers can be attached. Events "bubble up" (think DOM) so that error-handling no longer needs to be done local to the call.
 
+[0]:http://github.com/dyoder/mutual
+
 For example, here's a simple program to `put` and `get` and object from MongoDB.
 
     {log} = console
