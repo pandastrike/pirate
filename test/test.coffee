@@ -1,32 +1,61 @@
-{log} = console
-{Adapter} = (require "../src/mongo-adapter").Mongo
+{Mongo} = require "../src/index"
 {EventChannel} = require "mutual"
+
 events = new EventChannel
 
-events.on "error", (error) -> log error
+events.on "error", (error) -> console.log "Oh, dear!", error
 
-Adapter.make
+adapter = new Mongo.Adapter
   events: events
-  port: 27018
+  port: 27017
   host: "127.0.0.1"
-  database: "foo"
+  database: "test"
   options:
     auto_reconnect: true
 
+compose = (fns) ->
+  _fn = (args...) ->
+    fn = fns.shift()
+    fn?(args...)?.on? "success", _fn
+  _fn
+    
 events.on "ready", (adapter) ->
 
-  events.on "error", ->
-    adapter.close
-    process.exit -1
+  console.log "Database is ready"
   
-  (adapter.collection "bar")
-  
-  .on "success", (collection) ->
-    (collection.put baz: "hello")
+  (adapter.collection "books").on "success", (collection) ->
     
-    .on "success", (object) ->
-      (collection.get object.key)
+    
+    do compose [
+    
+      # Save the book
+      ->
+      
+        console.log "Saving book ..."
 
-      .on "success", (object) ->
-        log object
+        book = 
+          title: "Qubit"
+          author: "Dan Yoder"
+          published: "2013"
+      
+        collection.put "qubit", book
+      
+      # Get it back
+      -> 
+
+        console.log "Book saved!"
+        collection.get "qubit"
+    
+      # Delete it
+      (book) ->
+
+        console.log "Title: #{book.title}, Author: #{book.author}"
+        collection.delete "qubit"
+      
+      # Close the adapter
+      ->
+
+        console.log "Book removed!"
         adapter.close()
+      
+      ]

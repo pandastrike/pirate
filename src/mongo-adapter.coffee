@@ -23,20 +23,20 @@ class Adapter
       # Open the database
       @database.open (error,database) =>
         unless error?
-          @events.send "ready", @
+          @events.emit "ready", @
         else
-          @events.send "error", error
+          @events.emit "error", error
               
   collection: (name) ->
-    @events.source (_events) =>
+    @events.source (events) =>
       @database.collection name, (error,collection) =>
         unless error?
-          _events.send "success", 
+          events.emit "success", 
             Collection.make 
               collection: collection
               events: @events
         else
-          _events.send "error", error
+          events.emit "error", error
 
   
   close: ->
@@ -51,26 +51,54 @@ class Collection
     {@events,@collection} = options
         
   get: (key) ->
-    @events.source (_events) =>
-      _events.safely =>
-        id = new MongoDB.ObjectID(key)
-        @collection.findOne {_id: id}, (error,result) ->
+    @events.source (events) =>
+      events.safely =>
+        @collection.findOne {_id: key}, (error,result) ->
           unless error?
-            result.key = result._id.toString()
-            _events.send "success", result
+            # delete the _id field so we don't get strange
+            # results later ...
+            delete result._id if result?
+            events.emit "success", result
           else
-            _events.send "error", error
+            events.emit "error", error
 
-  put: (object) ->
-    @events.source (_events) =>
-      @collection.insert object, {safe: true}, (error,results) =>
+  put: (key,object) ->
+    @events.source (events) =>
+      @collection.update {_id: key}, {$set: object}, 
+        {upsert: true, safe: true}, 
+        (error,results) =>
+          unless error?
+            events.emit "success"
+          else
+            events.emit "error", error
+
+  delete: (key) ->
+    @events.source (events) =>
+      @collection.remove {_id: key}, (error,results) =>
         unless error?
-          result = results[0]
-          result.key = result._id.toString()
-          _events.send "success", result
+          events.emit "success"
         else
-          _events.send "error", error
-
+          events.emit "error", error
+          
+  all: ->
+    @events.source (events) =>
+      @collection.find {}, (error,results) =>
+        unless error?
+          results.toArray (error,results) =>
+            unless error?
+              events.emit "success", results
+            else
+              events.emit "error", error
+        else
+          events.emit "error", error
+    
+  count: ->
+    @events.source (events) => 
+      @collection.count (error,count) =>
+        unless error?
+          events.emit "success", count
+        else
+          events.emit "error", error
 
 module.exports = 
   Adapter: Adapter
