@@ -8,8 +8,8 @@
   },
   "dependencies": {
     "fairmont": "~0.1.1",
-    "mongodb": "~1.2.13",
-    "mutual": "~0.0.2"
+    "mongodb": "1.2.x",
+    "mutual": "0.2.x"
   },
   "devDependencies": {},
   "scripts": {
