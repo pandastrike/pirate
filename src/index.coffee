@@ -1,2 +1,2 @@
-module.exports =
-  Mongo: require "./adapters/mongo"
+
+module.exports = require "./adapters"
