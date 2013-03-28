@@ -1,4 +1,4 @@
-Collection = require "../collection"
+Collection = require "./collection"
 Adapter    = require "../../adapter"
 MongoDB    = require "mongodb"
 
