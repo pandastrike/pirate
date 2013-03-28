@@ -1,11 +1,14 @@
-Adapter = require "../../adapter"
-MongoDB = require "mongodb"
+Collection = require "../collection"
+Adapter    = require "../../adapter"
+MongoDB    = require "mongodb"
 
 
 class MongoAdapter extends Adapter
   
   constructor: (@configuration) ->
-    {@events, host, port, options, database} = @configuration
+    super
+    
+    {host, port, options, database} = @configuration
 
     # Make sure we convert exceptions into error events
     @events.safely =>
