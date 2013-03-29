@@ -7,7 +7,7 @@
     "test": "test"
   },
   "dependencies": {
-    "fairmont": "~0.1.1",
+    "fairmont": "latest",
     "mongodb": "1.2.x",
     "mutual": "0.2.x"
   },
