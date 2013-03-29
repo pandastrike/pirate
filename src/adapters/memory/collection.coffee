@@ -20,13 +20,18 @@ class MemoryCollection extends Collection
 
   put: (key, object) ->
     @events.source (events) =>
+      event = 
+        if key of @collection then "update"
+        else "new"
       @collection[key] = object
+      @emit event, {key, object}
       events.emit "success"
 
   delete: (key) ->
     @events.source (events) =>
       if key of @collection
         delete @collection[key]
+        @emit "delete", key
         events.emit "success"
       else
         events.emit "error", (toError "not-found")(key)
@@ -40,6 +45,9 @@ class MemoryCollection extends Collection
     @events.source (events) => 
       count = Object.keys(@collection).length
       events.emit "success", count
+
+  emit: (event, args...) =>
+    @events.emit "#{@name}.#{event}", args...
 
 
 module.exports = MemoryCollection

@@ -9,8 +9,7 @@ class Database
 
   collection: (name) ->
     if name of @collections then @collections[name]
-    else
-      @collections[name] = new Collection {name, @events}
+    else @collections[name] = Collection.make {name, @events}
 
   close: ->
     delete @collections
