@@ -7,7 +7,7 @@ events.on "error", (error) -> console.log "Oh, dear!", error
 
 events.on "books.delete", (key) ->
   console.log "Book '#{key}' has been deleted :("
-events.on "books.new", ({key, object}) ->
+events.on "books.put", ({key, object}) ->
   console.log "Got new book! :) key: '#{key}'", object
 
 adapter = Adapter.make

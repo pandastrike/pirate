@@ -55,7 +55,7 @@ class FileCollection extends Collection
       @writeFile filename, @encode(object), (error) =>
         unless error
           events.emit "success"
-          @emit "put", {key, object}
+          @emit "put", key, object
         else
           events.emit "error", error
 

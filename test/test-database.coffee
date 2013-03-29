@@ -7,13 +7,31 @@ events.on "error", (error) -> console.log "Oh, dear!", error
 
 events.on "books.delete", (key) ->
   console.log "Book '#{key}' has been deleted :("
-events.on "books.put", (key, object) ->
+events.on "books.new", ({key, object}) ->
   console.log "Got new book! :) key: '#{key}'", object
 
 adapter = Adapter.make
   name: "file"
   path: "db"
   events: events
+
+
+db = Database.make
+  events: events
+  adapters:
+    memory:
+      name: "memory"
+    redis:
+      name: "redis"
+  collections:
+    config:
+      adapters:
+        memory:
+          publish: yes
+          subcribe: yes
+        redis:
+          publish: no
+          subcribe: no
 
 compose = (fns) ->
   _fn = (args...) ->
