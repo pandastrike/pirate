@@ -1,16 +1,13 @@
 
-# Abstract adapter class
+# Universal adapter class
 class Adapter
   
-  constructor: (@configuration) ->
-    {@events} = @configuration
-
-  collection: (name) ->
-
-  close: ->
+  constructor: ->
 
   @make: (configuration) ->
-    new @ configuration
+    {name} = configuration
+    adapter = require("./adapters/#{name}")
+    adapter.Adapter.make configuration
 
 module.exports = Adapter
 

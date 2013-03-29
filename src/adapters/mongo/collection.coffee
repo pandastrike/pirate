@@ -3,7 +3,9 @@ Collection = require "../../collection"
 class MongoCollection extends Collection
 
   constructor: (options) ->
-    {@events, @collection} = options
+    super
+    
+    {@collection} = options
 
   get: (key) ->
     @events.source (events) =>

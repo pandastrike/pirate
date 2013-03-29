@@ -1,13 +1,12 @@
 Collection = require "../../collection"
-{toError, Catalog} = require "fairmont"
-
-Catalog.add "not-found", (key) ->
-  "Item #{key} not found"
+{toError} = require "fairmont"
 
 class MemoryCollection extends Collection
 
   constructor: (options) ->
-    {@events, @name} = options
+    super
+    
+    {@name} = options
     @collection = {}
 
   get: (key) ->

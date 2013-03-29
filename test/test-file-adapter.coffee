@@ -11,8 +11,15 @@ events.on "books.new", ({key, object}) ->
   console.log "Got new book! :) key: '#{key}'", object
 
 adapter = Adapter.make
-  name: "memory"
+  name: "file"
+  path: "db"
   events: events
+
+# db = Database.make
+#   adapters: [
+#     name: "memory"
+#     events: events
+#   ]
 
 compose = (fns) ->
   _fn = (args...) ->

@@ -1,7 +1,7 @@
-Adapter    = require "../../adapter"
-Database   = require "./database"
+BaseAdapter = require "../base-adapter"
+Database    = require "./database"
 
-class MemoryAdapter extends Adapter
+class MemoryAdapter extends BaseAdapter
   
   constructor: ->
     super

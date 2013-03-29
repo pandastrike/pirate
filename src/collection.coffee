@@ -1,8 +1,13 @@
+{Catalog}  = require "fairmont"
+
+Catalog.add "not-found", (key) ->
+  "Item #{key} not found"
 
 # Abstract collection class
 class Collection
   
-  constructor: ->
+  constructor: (options) ->
+    {@events} = options
 
   all: ->
 
@@ -16,6 +21,10 @@ class Collection
 
   @make: (options) ->
     new @ options
+
+  emit: (event, args...) =>
+    @events.emit "#{@name}.#{event}", args...
+
 
 module.exports = Collection
 

@@ -1,14 +1,14 @@
-Collection = require "./collection"
-Adapter    = require "../../adapter"
-MongoDB    = require "mongodb"
+BaseAdapter = require "../base-adapter"
+Collection  = require "./collection"
+MongoDB     = require "mongodb"
 
 
-class MongoAdapter extends Adapter
+class MongoAdapter extends BaseAdapter
   
-  constructor: (@configuration) ->
+  constructor: (configuration) ->
     super
     
-    {host, port, options, database} = @configuration
+    {host, port, options, database} = configuration
 
     # Make sure we convert exceptions into error events
     @events.safely =>
