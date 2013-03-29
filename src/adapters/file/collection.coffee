@@ -36,12 +36,8 @@ class FileCollection extends Collection
       else
         callback true
 
-  writeFile: (filename, body, events) ->
-    fs.writeFile filename, body, {@encoding}, (error) =>
-      unless error
-        events.emit "success"
-      else
-        events.emit "error", error
+  writeFile: (filename, body, callback) ->
+    fs.writeFile filename, body, {@encoding}, callback
 
   get: (key) ->
     @events.source (events) =>
@@ -56,18 +52,20 @@ class FileCollection extends Collection
   put: (key, object) ->
     @events.source (events) =>
       filename = @filename(key)
-      @exists filename, (exists) =>
-        event = if exists then "update" else "new"
-        @writeFile filename, @encode(object), events
-        @emit event, {key, object}
+      @writeFile filename, @encode(object), (error) =>
+        unless error
+          events.emit "success"
+          @emit "put", {key, object}
+        else
+          events.emit "error", error
 
   delete: (key) ->
     @events.source (events) =>
       filename = @filename(key)
       fs.unlink filename, (error) =>
         unless error
-          @emit "delete", key
           events.emit "success"
+          @emit "delete", key
         else
           events.emit "error", error
 

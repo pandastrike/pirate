@@ -19,11 +19,8 @@ class MemoryCollection extends Collection
 
   put: (key, object) ->
     @events.source (events) =>
-      event = 
-        if key of @collection then "update"
-        else "new"
       @collection[key] = object
-      @emit event, {key, object}
+      @emit "put", {key, object}
       events.emit "success"
 
   delete: (key) ->
