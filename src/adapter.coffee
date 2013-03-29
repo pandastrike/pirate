@@ -3,6 +3,7 @@
 class Adapter
   
   constructor: (@configuration) ->
+    {@events} = @configuration
 
   collection: (name) ->
 
