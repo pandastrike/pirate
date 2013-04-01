@@ -68,7 +68,7 @@ class Collection
         {upsert: true, safe: true}, 
         (error,results) =>
           unless error?
-            events.emit "success"
+            events.emit "success", object
           else
             events.emit "error", error
 
