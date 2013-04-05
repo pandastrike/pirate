@@ -17,6 +17,7 @@ class Adapter
       @database[name] = Collection.make
         collection: {}
         events: @events
+        adapter: @
       events.emit "success", @database[name]
   
   close: ->
@@ -26,8 +27,7 @@ class Collection
   @make: (options) ->
     new @ options
   
-  constructor: (options) ->
-    {@events,@collection} = options
+  constructor: ({@events,@collection,@adapter}) ->
         
   get: (key) ->
     @events.source (events) =>

@@ -35,6 +35,7 @@ class Adapter
             Collection.make 
               collection: collection
               events: @events
+              adapter: @
         else
           events.emit "error", error
 
@@ -47,23 +48,21 @@ class Collection
   @make: (options) ->
     new @ options
   
-  constructor: (options) ->
-    {@events,@collection} = options
+  constructor: ({@events,@collection,@adapter}) ->
         
   get: (key) ->
     @events.source (events) =>
       events.safely =>
         @collection.findOne {_id: key}, (error,result) ->
           unless error?
-            # delete the _id field so we don't get strange
-            # results later ...
-            delete result._id if result?
             events.emit "success", result
           else
             events.emit "error", error
 
   put: (key,object) ->
     @events.source (events) =>
+      # you can't update the _id field
+      delete object._id
       @collection.update {_id: key}, {$set: object}, 
         {upsert: true, safe: true}, 
         (error,results) =>
