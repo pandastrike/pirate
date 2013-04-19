@@ -5,7 +5,7 @@ class MemoryAdapter extends BaseAdapter
   
   constructor: ->
     super
-
+    
     @db = new Database {@events}
 
     @events.emit "ready", @

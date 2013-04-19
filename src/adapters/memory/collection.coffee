@@ -1,5 +1,5 @@
-Collection = require "../../collection"
-{toError} = require "fairmont"
+Collection       = require "../base-collection"
+{toError, merge} = require "fairmont"
 
 class MemoryCollection extends Collection
 
@@ -19,15 +19,14 @@ class MemoryCollection extends Collection
 
   put: (key, object) ->
     @events.source (events) =>
+      object = merge {_id: key}, object
       @collection[key] = object
-      @emit "put", {key, object}
       events.emit "success"
 
   delete: (key) ->
     @events.source (events) =>
       if key of @collection
         delete @collection[key]
-        @emit "delete", key
         events.emit "success"
       else
         events.emit "error", (toError "not-found")(key)
@@ -41,9 +40,5 @@ class MemoryCollection extends Collection
     @events.source (events) => 
       count = Object.keys(@collection).length
       events.emit "success", count
-
-  emit: (event, args...) =>
-    @events.emit "#{@name}.#{event}", args...
-
 
 module.exports = MemoryCollection
