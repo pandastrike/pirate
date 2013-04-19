@@ -1,4 +1,4 @@
-Collection = require "../../collection"
+Collection = require "../base-collection"
 
 class MongoCollection extends Collection
 
@@ -25,7 +25,7 @@ class MongoCollection extends Collection
         {upsert: true, safe: true}, 
         (error, results) =>
           unless error?
-            events.emit "success"
+            events.emit "success", results
           else
             events.emit "error", error
 

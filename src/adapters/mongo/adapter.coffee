@@ -8,7 +8,7 @@ class MongoAdapter extends BaseAdapter
   constructor: (configuration) ->
     super
     
-    {host, port, options, database} = configuration
+    {host, port, auth, options, database} = configuration
 
     # Make sure we convert exceptions into error events
     @events.safely =>
@@ -21,10 +21,18 @@ class MongoAdapter extends BaseAdapter
       
       # Open the database
       @database.open (error, database) =>
-        unless error?
-          @events.emit "ready", @
+        _done = (error, database) =>
+          unless error?
+            @events.emit "ready", @
+          else
+            @events.emit "error", error
+
+        if auth?
+          {username, password} = auth
+          database.authenticate username, password, (error, database) =>
+            _done error, database
         else
-          @events.emit "error", error
+          _done error, database
               
   collection: (name) ->
     @events.source (events) =>
