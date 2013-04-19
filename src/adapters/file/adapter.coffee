@@ -13,9 +13,8 @@ class FileAdapter extends BaseAdapter
 
     @db = new Database {@events, @path}
 
-    console.log "FileAdapter"
+    
     @db.open (error) =>
-      console.log "FileAdapter", error
       unless error
         @events.emit "ready", @
       else

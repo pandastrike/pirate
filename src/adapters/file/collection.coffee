@@ -1,4 +1,4 @@
-Collection = require "../../collection"
+Collection = require "../base-collection"
 async      = require "async"
 fs         = require "fs"
 {toError}  = require "fairmont"
@@ -8,6 +8,8 @@ class FileCollection extends Collection
   encoding: 'utf8'
 
   constructor: (options) ->
+    @_id = 1
+    @id = "_id"
     super
 
     {@name, @path} = options
@@ -34,7 +36,7 @@ class FileCollection extends Collection
           else
             callback error
       else
-        callback true
+        callback (toError "not-found")(filename)
 
   writeFile: (filename, body, callback) ->
     fs.writeFile filename, body, {@encoding}, callback
@@ -52,10 +54,10 @@ class FileCollection extends Collection
   put: (key, object) ->
     @events.source (events) =>
       filename = @filename(key)
+      object[@id] = key
       @writeFile filename, @encode(object), (error) =>
         unless error
           events.emit "success"
-          @emit "put", key, object
         else
           events.emit "error", error
 
@@ -65,7 +67,6 @@ class FileCollection extends Collection
       fs.unlink filename, (error) =>
         unless error
           events.emit "success"
-          @emit "delete", key
         else
           events.emit "error", error
 
@@ -83,9 +84,13 @@ class FileCollection extends Collection
           events.emit "error", error
 
   readAll: (files, callback) =>
-    async.map files, @readFile, (error, results) =>
+    tasks = ( async.apply @readFile, file for file in files )
+    async.parallelLimit tasks, 200, (error, results) =>
       unless error
-        callback null, (@decode res for res in results)
+        try
+          callback null, (@decode res for res in results)
+        catch _error
+          callback _error
       else
         callback error
 
