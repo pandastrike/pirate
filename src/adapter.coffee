@@ -10,4 +10,3 @@ class Adapter
     adapter.Adapter.make configuration
 
 module.exports = Adapter
-
