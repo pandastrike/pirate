@@ -1,6 +1,6 @@
 {
   "name": "pirate",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "A simple storage interface with adapters for different storage systems",
   "main": "src/index.coffee",
   "directories": {

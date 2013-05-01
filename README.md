@@ -1,18 +1,24 @@
-Pirate provides a simple key-value oriented storage interface with adapters for a variety of storage systems. This simplifies the interface to storage technologies and makes it easier to move between them. Obviously, many of the more sophisticated features of these systems are lost in the process, but the underlying storage implementation can always be accessed when necessary.
+# Argh! What's This?
 
-The elements of the interface are:
+Pirate provides a simple key-value storage interface with adapters for a different storage systems. (We presently only support MongoDB and in-memory storage, which is useful for testing). 
 
-* `get key`
+## Benefits
 
-* `put object`
+The benefits of this approach are:
 
-* `delete key`
+* **Simplify your code.** The Pareto Principle often applies to storage systems, where you only need 20% of the features 80% of the time. Pirate optimizes that 80% while still allowing you to extend adapters to handle the other 20%, specific to your requirements.
 
-Pirate uses a library called [Mutual][0] to provide a simple event-based interface. Each method returns an `events` object to which event handlers can be attached. Events "bubble up" (think DOM) so that error-handling no longer needs to be done local to the call.
+* **Eliminate the impedance mismatch between HTTP and storage.** Pirate follows a similar interface to that supported by HTTP: `get`, `put`, `patch`, and `delete`. There's no equivalent to `post` and there are a few additional  methods, but semantically, they're very close.
+
+* **Easily switch between storage implementations.** Pirate's adapters not only hide the complexity of the underlying storage implementation, they make it much easier to change it. You can prototype using an in-memory solution, then use a database and later partition your data across servers.
+
+* **Make use of powerful event-based interfaces.** Node-style callbacks provide a reasonable least-common-denominator, but for more sophisticated applications, they can be tedious. Pirate uses a library called [Mutual][0] to provide a simple event-based interface. Each method returns an `events` object to which event handlers can be attached. Events "bubble up" (think DOM) so that error-handling no longer needs to be done local to the call.
 
 [0]:http://github.com/dyoder/mutual
 
-For example, here's a simple program to `put` and `get` and object from MongoDB.
+## Example
+
+Here's a simple program to `put` and `get` and object from MongoDB.
 
     {log} = console
     {Mongo} = require "pirate"
@@ -58,5 +64,26 @@ For example, here's a simple program to `put` and `get` and object from MongoDB.
           .on "success", (object) ->
             log object
             adapter.close()
-            
+
+# Adapter API
+
+The elements of the interface are:
+
+* `get key` Returns the object associated with the key or null.
+
+* `put key, object` Overwrites the object associated with `key` with `object`. Returns the updated object.
+
+* `delete key` Deletes the object associated with `key`. Returns nothing.
+
+* `patch key, patch` Updates the object associated with `key` by overlaying `patch`. Returns the updated object.
+
+* `all` Returns all the objects in the collection.
+
+* `count` Returns a count of all the objects in the collection.
+
+All API methods actually return an `EventChannel` object. The `success` event is how a value is ultimately returned, if necessary.
+
+
+
+          
 

@@ -63,13 +63,20 @@ class Collection
     @events.source (events) =>
       # you can't update the _id field
       delete object._id
-      @collection.update {_id: key}, {$set: object}, 
+      @collection.update {_id: key}, object, 
         {upsert: true, safe: true}, 
         (error,results) =>
           unless error?
             events.emit "success", object
           else
             events.emit "error", error
+
+  # by a quirk in MongoDB's DML you can implement
+  # ::patch in terms of ::put
+  patch: (key,patch) ->
+    # you can't update the _id field
+    delete patch._id
+    @put key, {$set: patch}
 
   delete: (key) ->
     @events.source (events) =>
