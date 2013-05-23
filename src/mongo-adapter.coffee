@@ -1,24 +1,31 @@
-{type} = require "fairmont"
+{type,merge} = require "fairmont"
 
 MongoDB = require "mongodb"
 
+defaults = 
+  port: 27017
+  host: "127.0.0.1"
+  options:
+    auto_reconnect: true
+  
 class Adapter
   
   @make: (configuration) ->
     new @ configuration
   
-  constructor: (@configuration) ->
-    {@events} = @configuration
-    {host, port, options, database} = @configuration
+  constructor: (configuration) ->
+    configuration = merge( defaults, configuration )
+    {@events} = configuration
+    {host, port, options, database} = configuration
 
     # Make sure we convert exceptions into error events
     @events.safely =>
       
       # Create the server object
-      server = new MongoDB.Server(host, port, options)
+      server = new MongoDB.Server( host, port, options )
       
       # Create the database
-      @database = new MongoDB.Db database, server, w: 1
+      @database = new MongoDB.Db( database, server, w: 1 )
       
       # Open the database
       @database.open (error,database) =>
@@ -51,18 +58,32 @@ class Collection
   constructor: ({@events,@collection,@adapter}) ->
         
   get: (key) ->
-    @events.source (events) =>
-      events.safely =>
-        @collection.findOne {_id: key}, (error,result) ->
-          unless error?
-            events.emit "success", result
-          else
-            events.emit "error", error
+    if type(key) == "array"
+      @events.source (events) =>
+        events.safely =>
+          @collection.find { _id: { $in: key } }, (error,cursor) ->
+            unless error?
+              cursor.toArray (error,results) ->
+                unless error?
+                  events.emit "success", results
+                else
+                  events.emit "error", error
+            else
+              events.emit "error", error
+    else
+      @events.source (events) =>
+        events.safely =>
+          @collection.findOne {_id: "#{key}"}, (error,result) ->
+            unless error?
+              events.emit "success", result
+            else
+              events.emit "error", error
 
   put: (key,object) ->
     @events.source (events) =>
       # you can't update the _id field
       delete object._id
+      object._id = key
       @collection.update {_id: key}, object, 
         {upsert: true, safe: true}, 
         (error,results) =>
@@ -71,12 +92,19 @@ class Collection
           else
             events.emit "error", error
 
-  # by a quirk in MongoDB's DML you can implement
-  # ::patch in terms of ::put
+  # TODO: Should patch allow for upserts? Does that make sense?
+  # I don't think so, but it's worth further consideration.
   patch: (key,patch) ->
     # you can't update the _id field
     delete patch._id
-    @put key, {$set: patch}
+    @collection.update {_id: key}, {$set: patch},
+      {safe: true},
+      (error,results) =>
+        unless error?
+          events.emit "success", object
+        else
+          events.emit "error", error
+        
 
   delete: (key) ->
     @events.source (events) =>

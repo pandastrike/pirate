@@ -27,7 +27,8 @@ class Collection
   @make: (options) ->
     new @ options
   
-  constructor: ({@events,@collection,@adapter}) ->
+  constructor: ({events,@collection,@adapter}) ->
+    @events = events.source()
         
   get: (key) ->
     @events.source (events) =>
