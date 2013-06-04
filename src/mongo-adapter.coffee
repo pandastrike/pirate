@@ -1,4 +1,5 @@
 {type,merge} = require "fairmont"
+{overload} = require "typely"
 
 MongoDB = require "mongodb"
 
@@ -57,27 +58,26 @@ class Collection
   
   constructor: ({@events,@collection,@adapter}) ->
         
-  get: (key) ->
-    if type(key) == "array"
+  get: overload (match,fail) ->
+    
+    match "array", (keys) -> @get( _id: keys )
+    match "string", (key) -> @get( _id: key )
+    match "object", (query) ->
       @events.source (events) =>
-        events.safely =>
-          @collection.find { _id: { $in: key } }, (error,cursor) ->
-            unless error?
-              cursor.toArray (error,results) ->
-                unless error?
-                  events.emit "success", results
-                else
-                  events.emit "error", error
-            else
-              events.emit "error", error
-    else
-      @events.source (events) =>
-        events.safely =>
-          @collection.findOne {_id: "#{key}"}, (error,result) ->
-            unless error?
-              events.emit "success", result
-            else
-              events.emit "error", error
+        @events.safely =>
+          [ name ] = Object.keys( query )
+          _query = {}
+          value = query[ name ]
+          if type( value ) == "array"
+            _query[ name ] = { $in: value }
+            @collection.find _query, (error,cursor) ->
+              unless error?
+                cursor.toArray events.callback
+              else
+                events.emit "error", error
+          else
+            _query[ name ] = value
+            @collection.findOne _query, events.callback
 
   put: (key,object) ->
     @events.source (events) =>
