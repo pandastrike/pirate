@@ -90,7 +90,10 @@ class Collection
     match "object", "object", (key,object) ->
       @events.source (events) =>
         # you can't update the _id field
-        object._id = key._id
+        if key._id?
+          object._id = key._id
+        else
+          delete object._id
         @collection.update key, object,
           upsert: true, safe: true
           events.callback
