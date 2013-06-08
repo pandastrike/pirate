@@ -45,6 +45,17 @@ events.on "ready", (adapter) ->
 
         console.log "Book saved!"
         collection.get "qubit"
+        
+      # Patch it
+      (book) ->
+        collection.patch "qubit", author: "Finn Mack"
+        
+      # Get it back again
+      -> 
+
+        console.log "Book updated!"
+        collection.get "qubit"
+
     
       # Delete it
       (book) ->

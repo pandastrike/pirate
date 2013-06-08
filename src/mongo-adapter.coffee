@@ -63,56 +63,59 @@ class Collection
     match "array", (keys) -> @get( _id: keys )
     match "string", (key) -> @get( _id: key )
     match "object", (query) ->
+
+      singular = true
+      _query = {}
+      for key, value of query
+        _query[ key ] = 
+          if type( value ) == "array"
+            { $in: value }
+            singular = false
+          else
+            value
+
       @events.source (events) =>
         @events.safely =>
-          [ name ] = Object.keys( query )
-          _query = {}
-          value = query[ name ]
-          if type( value ) == "array"
-            _query[ name ] = { $in: value }
+          if singular
+            @collection.findOne _query, events.callback
+          else
             @collection.find _query, (error,cursor) ->
               unless error?
                 cursor.toArray events.callback
               else
                 events.emit "error", error
-          else
-            _query[ name ] = value
-            @collection.findOne _query, events.callback
 
-  put: (key,object) ->
-    @events.source (events) =>
-      # you can't update the _id field
-      delete object._id
-      object._id = key
-      @collection.update {_id: key}, object, 
-        {upsert: true, safe: true}, 
-        (error,results) =>
-          unless error?
-            events.emit "success", object
-          else
-            events.emit "error", error
+  put: overload (match,fail) ->
+    match "string", "object", (key,object) -> @put( _id: key, object )
+    match "object", "object", (key,object) ->
+      @events.source (events) =>
+        # you can't update the _id field
+        object._id = key._id
+        @collection.update key, object,
+          upsert: true, safe: true
+          events.callback
+        
 
   # TODO: Should patch allow for upserts? Does that make sense?
   # I don't think so, but it's worth further consideration.
-  patch: (key,patch) ->
-    # you can't update the _id field
-    delete patch._id
-    @collection.update {_id: key}, {$set: patch},
-      {safe: true},
-      (error,results) =>
-        unless error?
-          events.emit "success", object
-        else
-          events.emit "error", error
-        
+  patch: overload (match,fail) ->
+    match "string", "object", (key,patch) -> @patch( _id: key, patch )
+    match "object", "object", (key,patch) ->
+      @events.source (events) =>
+        # you can't update the _id field
+        delete patch._id
+        @collection.update key, { $set: patch },
+          { safe: true }, events.callback
 
-  delete: (key) ->
-    @events.source (events) =>
-      @collection.remove {_id: key}, (error,results) =>
-        unless error?
-          events.emit "success"
-        else
-          events.emit "error", error
+  delete: overload (match,fail) ->
+    match "string", (key) -> @delete( _id: key )
+    match "object", (key) ->
+      @events.source (events) =>
+        @collection.remove key, (error,results) =>
+          unless error?
+            events.emit "success"
+          else
+            events.emit "error", error
           
   all: ->
     @events.source (events) =>
