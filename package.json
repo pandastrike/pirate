@@ -7,9 +7,9 @@
     "test": "test"
   },
   "dependencies": {
-    "fairmont": "~0.3.x",
+    "fairmont": "0.4.x",
     "mongodb": "1.2.x",
-    "mutual": "0.3.x",
+    "mutual": "0.4.x",
     "typely": "0.0.0"
   },
   "devDependencies": {},
