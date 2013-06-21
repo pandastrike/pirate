@@ -56,10 +56,14 @@ events.on "ready", (adapter) ->
         console.log "Book updated!"
         collection.get "qubit"
 
-    
-      # Delete it
+      # Use a multi-key query
       (book) ->
-
+        
+        collection.find ["qubit","the martian chronicles"]
+        
+      # Delete it
+      ([book]) ->
+        
         console.log "Title: #{book.title}, Author: #{book.author}"
         collection.delete "qubit"
       

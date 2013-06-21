@@ -57,33 +57,29 @@ class Collection
     new @ options
   
   constructor: ({@events,@collection,@adapter}) ->
-        
-  get: overload (match,fail) ->
+  
+  find: overload (match, fail) ->
     
-    match "array", (keys) -> @get( _id: keys )
+    match "array", (keys) -> @find( _id: keys )
+    match "object", (query) ->
+      _query = query
+      for key, values of query
+        _query[key] = $in: values
+      @events.source (events) =>
+        events.safely =>
+          @collection.find _query, (error,cursor) =>
+            if error
+              events.emit "error", error
+            else
+              cursor.toArray( events.callback )
+    
+  get: overload (match, fail) ->
+    
     match "string", (key) -> @get( _id: key )
     match "object", (query) ->
-
-      singular = true
-      _query = {}
-      for key, value of query
-        _query[ key ] = 
-          if type( value ) == "array"
-            { $in: value }
-            singular = false
-          else
-            value
-
       @events.source (events) =>
-        @events.safely =>
-          if singular
-            @collection.findOne _query, events.callback
-          else
-            @collection.find _query, (error,cursor) ->
-              unless error?
-                cursor.toArray events.callback
-              else
-                events.emit "error", error
+        events.safely =>
+            @collection.findOne query, events.callback
 
   put: overload (match,fail) ->
     match "string", "object", (key,object) -> @put( _id: key, object )
