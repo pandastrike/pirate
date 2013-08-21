@@ -1,6 +1,6 @@
 {
   "name": "pirate",
-  "version": "0.9.0",
+  "version": "0.9.1",
   "description": "A simple storage interface with adapters for different storage systems",
   "main": "src/index.coffee",
   "directories": {
@@ -8,8 +8,10 @@
   },
   "dependencies": {
     "fairmont": "0.4.x",
+    "elasticsearchclient": "0.5.x",
     "mongodb": "1.2.x",
     "mutual": "0.4.x",
+    "sleep": "1.1.1",
     "typely": "0.0.0"
   },
   "devDependencies": {},
