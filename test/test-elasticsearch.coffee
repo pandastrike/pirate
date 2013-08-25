@@ -83,7 +83,7 @@ events.on "ready", (adapter) ->
       console.log "Finding book ..."
       # sleep for 1 sec, ElasticSearch takes atmost 1 second to replicate
       sleep.sleep 1
-      collection.find "test"
+      collection.find "test", {}
 
     go (findResults) ->
       console.log "Find results: ", util.inspect(findResults)

@@ -50,18 +50,23 @@ class Collection
   find: overload (match, fail) ->    
     match "array", (keys) -> @find( {terms: {key: keys}} )
     match "string", (queryString) -> 
-      @find( query_string: query: queryString )
-    match "object", (query) -> 
+      @find( {query_string: {query: queryString}}, {} )
+    match "object", (query) -> @find( query, {} )
+    match "string", "object", (queryString, options) -> 
+      @find( {query_string: {query: queryString}}, options )
+    match "object", "object", (query, options) -> 
       @events.source (events) =>
         events.safely =>
           @adapter.client.search(
-              @index, @type, {query: query}
+              @index, @type, {query: query}, options
             )
             .on "data", (data) -> 
               jsonData = JSON.parse(data)
               unless jsonData.error?
                 results = jsonData.hits.hits.map (dataElem) ->
-                  dataElem._source
+                  result = dataElem._source
+                  result.score = dataElem._score
+                  result
                 events.emit "success", results
               else
                 events.emit "error", jsonData.error
@@ -75,12 +80,13 @@ class Collection
       @events.source (events) =>
         events.safely =>
           @adapter.client.search(
-              @index, @type, {query: {term: query}}
+              @index, @type, {filter: {term: query}}
             )
             .on "data", (data) -> 
               jsonData = JSON.parse(data)
               unless jsonData.error?
                 result = if jsonData.hits.hits.length == 1 then jsonData.hits.hits[0]._source else null 
+                result.score = jsonData.hits.hits[0]._score
                 events.emit "success", result
               else
                 events.emit "error", jsonData.error
@@ -124,7 +130,6 @@ class Collection
                 )
                 .on "data", (data) -> 
                   jsonData = JSON.parse(data)
-                  console.log data
                   unless jsonData.error?
                     events.emit "success"
                   else
@@ -139,7 +144,28 @@ class Collection
           .exec()
           
   all: ->
-    @find match_all: {}
+    @events.source (events) =>
+        events.safely =>
+          countEvents = @count()
+          countEvents.on "success", (resultCount) =>
+            @adapter.client.search(
+                @index, @type, query: {match_all: {}}, {size: resultCount}
+              )
+              .on "data", (data) -> 
+                jsonData = JSON.parse(data)
+                unless jsonData.error?
+                  results = jsonData.hits.hits.map (dataElem) ->
+                    result = dataElem._source
+                    result.score = dataElem._score
+                    result
+                  events.emit "success", results
+                else
+                  events.emit "error", jsonData.error
+              .on "error", (err) -> 
+                events.emit "error", err
+              .exec()
+          countEvents.on "error", (err) ->
+            events.emit "error", err
     
   count: -> 
     @events.source (events) => 
