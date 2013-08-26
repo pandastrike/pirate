@@ -50,10 +50,10 @@ class Collection
   find: overload (match, fail) ->    
     match "array", (keys) -> @find( {terms: {key: keys}} )
     match "string", (queryString) -> 
-      @find( {query_string: {query: queryString}}, {} )
+      @find( {query_string: {query: queryString, default_operator: "AND"}}, {} )
     match "object", (query) -> @find( query, {} )
     match "string", "object", (queryString, options) -> 
-      @find( {query_string: {query: queryString}}, options )
+      @find( {query_string: {query: queryString, default_operator: "AND"}}, options )
     match "object", "object", (query, options) -> 
       @events.source (events) =>
         events.safely =>
@@ -85,8 +85,11 @@ class Collection
             .on "data", (data) -> 
               jsonData = JSON.parse(data)
               unless jsonData.error?
-                result = if jsonData.hits.hits.length == 1 then jsonData.hits.hits[0]._source else null 
-                result.score = jsonData.hits.hits[0]._score
+                if jsonData.hits? and jsonData.hits.hits? and jsonData.hits.hits.length == 1
+                  result = jsonData.hits.hits[0]._source
+                  result.score = jsonData.hits.hits[0]._score
+                else
+                  result = null
                 events.emit "success", result
               else
                 events.emit "error", jsonData.error
