@@ -48,7 +48,25 @@ class Collection
   constructor: ({@index,@type,@events,@adapter}) ->
   
   find: overload (match, fail) ->    
-    match "array", (keys) -> @find( {terms: {key: keys}} )
+    match "array", (keys) -> 
+      @events.source (events) =>
+        events.safely =>
+          @adapter.client.count(
+            @index, @type, {terms: {key: keys}}
+          )
+          .on "data", (data) => 
+            jsonData = JSON.parse(data)
+            unless jsonData.error?
+              findEvents = @find({terms: {key: keys}}, {size: jsonData.count})
+              findEvents.on "success", (data) ->
+                events.emit "success", data
+              findEvents.on "error", (err) ->
+                events.emit "error", err
+            else
+              events.emit "error", jsonData.error
+          .on "error", (err) -> 
+            events.emit "error", err
+          .exec()
     match "string", (queryString) -> 
       @find( {query_string: {query: queryString, default_operator: "AND"}}, {} )
     match "object", (query) -> @find( query, {} )

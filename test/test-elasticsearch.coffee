@@ -88,6 +88,14 @@ events.on "ready", (adapter) ->
     go (findResults) ->
       console.log "Find results: ", util.inspect(findResults)
 
+    # Find the book by key array
+    go -> 
+      console.log "Finding book by key array ..."
+      collection.find ["test"]
+
+    go (findResults) ->
+      console.log "Find by key array results: ", util.inspect(findResults)
+
     # All books
     go -> 
       console.log "All books ..."
