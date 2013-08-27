@@ -54,7 +54,6 @@ events.on "ready", (adapter) ->
           "book"
           book:
             properties:
-              key: type: "string"
               title: type: "string"
               author: type: "string"
               published: type: "string"
@@ -121,5 +120,5 @@ events.on "ready", (adapter) ->
     go (book) ->
       console.log "Book: ", util.inspect(book)
       console.log "Deleting the book"
-      collection.delete book
+      collection.delete "test"
 

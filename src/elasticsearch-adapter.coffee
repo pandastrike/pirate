@@ -52,12 +52,12 @@ class Collection
       @events.source (events) =>
         events.safely =>
           @adapter.client.count(
-            @index, @type, {terms: {key: keys}}
+            @index, @type, {terms: {_id: keys}}
           )
           .on "data", (data) => 
             jsonData = JSON.parse(data)
             unless jsonData.error?
-              findEvents = @find({terms: {key: keys}}, {size: jsonData.count})
+              findEvents = @find({terms: {_id: keys}}, {size: jsonData.count})
               findEvents.on "success", (data) ->
                 events.emit "success", data
               findEvents.on "error", (err) ->
@@ -93,7 +93,7 @@ class Collection
             .exec()
     
   get: overload (match, fail) ->    
-    match "string", (key) -> @get( key: key )
+    match "string", (key) -> @get( _id: key )
     match "object", (query) ->
       @events.source (events) =>
         events.safely =>
@@ -116,12 +116,11 @@ class Collection
             .exec()
 
   put: overload (match,fail) ->
-    match "string", "object", (key,object) -> @put(merge(key: key, object))
-    match "object", "object", (key,object) -> @put(merge(key, object))
-    match "object", (object) -> 
+    match "string", "object", (key,object) -> @put( _id: key, object )
+    match "object", "object", (key,object) -> 
       @events.source (events) =>
         @adapter.client.index(
-            @index, @type, object
+            @index, @type, object, key._id
           )
           .on "data", (data) => 
             jsonData = JSON.parse(data)
@@ -135,29 +134,16 @@ class Collection
         
 
   delete: overload (match,fail) ->
-    match "string", (key) -> @delete( key: key )
+    match "string", (key) -> @delete( _id: key )
     match "object", (key) ->
       @events.source (events) =>
-        @adapter.client.search(
-            @index, @type, {query: {term: {key: key.key }}}
+        @adapter.client.deleteDocument(
+            @index, @type, key._id
           )
-          .on "data", (data) => 
+          .on "data", (data) -> 
             jsonData = JSON.parse(data)
             unless jsonData.error?
-              if !jsonData.hits? or !jsonData.hits.hits? or jsonData.hits.hits.length == 0
-                events.emit "error", "Failed to delete, document not found"
-              @adapter.client.deleteDocument(
-                  @index, @type, jsonData.hits.hits[0]._id
-                )
-                .on "data", (data) -> 
-                  jsonData = JSON.parse(data)
-                  unless jsonData.error?
-                    events.emit "success"
-                  else
-                    events.emit "error", jsonData.error
-                .on "error", (err) -> 
-                  events.emit "error", err
-                .exec()
+              events.emit "success"
             else
               events.emit "error", jsonData.error
           .on "error", (err) -> 
