@@ -4,7 +4,7 @@
 ElasticSearchClient = require('elasticsearchclient')
 
 defaults = 
-  port: 9300
+  port: 9200
   host: "127.0.0.1"
   secure: true
   
