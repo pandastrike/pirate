@@ -57,7 +57,7 @@ class Collection
           .on "data", (data) => 
             jsonData = JSON.parse(data)
             unless jsonData.error?
-              findEvents = @find({terms: {_id: keys}}, {size: jsonData.count})
+              findEvents = @find({filter: {terms: {_id: keys}}}, {size: jsonData.count})
               findEvents.on "success", (data) ->
                 events.emit "success", data
               findEvents.on "error", (err) ->
@@ -68,15 +68,15 @@ class Collection
             events.emit "error", err
           .exec()
     match "string", (queryString) -> 
-      @find( {query_string: {query: queryString, default_operator: "AND"}}, {} )
+      @find( {query: {query_string: {query: queryString, default_operator: "AND"}}}, {} )
     match "object", (query) -> @find( query, {} )
     match "string", "object", (queryString, options) -> 
-      @find( {query_string: {query: queryString, default_operator: "AND"}}, options )
+      @find( {query: {query_string: {query: queryString, default_operator: "AND"}}}, options )
     match "object", "object", (query, options) -> 
       @events.source (events) =>
         events.safely =>
           @adapter.client.search(
-              @index, @type, {query: query}, options
+              @index, @type, query, options
             )
             .on "data", (data) -> 
               jsonData = JSON.parse(data)
