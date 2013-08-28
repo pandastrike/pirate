@@ -83,6 +83,7 @@ class Collection
               unless jsonData.error?
                 results = jsonData.hits.hits.map (dataElem) ->
                   result = dataElem._source
+                  result._id = dataElem._id
                   result.score = dataElem._score
                   result
                 events.emit "success", results
@@ -105,6 +106,7 @@ class Collection
               unless jsonData.error?
                 if jsonData.hits? and jsonData.hits.hits? and jsonData.hits.hits.length == 1
                   result = jsonData.hits.hits[0]._source
+                  result._id = jsonData.hits.hits[0]._id
                   result.score = jsonData.hits.hits[0]._score
                 else
                   result = null
@@ -163,6 +165,7 @@ class Collection
                 unless jsonData.error?
                   results = jsonData.hits.hits.map (dataElem) ->
                     result = dataElem._source
+                    result._id = dataElem._id
                     result.score = dataElem._score
                     result
                   events.emit "success", results
