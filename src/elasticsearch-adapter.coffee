@@ -118,11 +118,18 @@ class Collection
             .exec()
 
   put: overload (match,fail) ->
-    match "string", "object", (key,object) -> @put( _id: key, object )
+    match "object", (object) -> 
+      @put( _id: null, object, {} )
+    match "string", "object", (key,object) -> 
+      @put( _id: key, object, {} )
+    match "string", "object", "object", (key,object,options) -> 
+      @put( _id: key, object, options )
     match "object", "object", (key,object) -> 
+      @put( key, object, {} )
+    match "object", "object", "object", (key,object,options) -> 
       @events.source (events) =>
         @adapter.client.index(
-            @index, @type, object, key._id
+            @index, @type, object, (if key._id? then key._id else null), options
           )
           .on "data", (data) => 
             jsonData = JSON.parse(data)
