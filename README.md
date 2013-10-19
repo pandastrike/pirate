@@ -20,50 +20,52 @@ The benefits of this approach are:
 
 Here's a simple program to `put` and `get` and object from MongoDB.
 
-    {log} = console
-    {Mongo} = require "pirate"
-    {EventChannel} = require "mutual"
-    
-    # Create the top-level events object
-    events = new EventChannel
+```coffee
+{log} = console
+{Mongo} = require "pirate"
+{EventChannel} = require "mutual"
 
-    # Default error handler just logs the error
-    events.on "error", (error) -> log error
+# Create the top-level events object
+events = new EventChannel
 
-    # Create an adapter, passing in the events object
-    Mongo.Adapter.make
-      events: events
-      port: 27018
-      host: "127.0.0.1"
-      database: "foo"
-      options:
-        auto_reconnect: true
+# Default error handler just logs the error
+events.on "error", (error) -> log error
 
-    # When the adapter is ready, we can do stuff
-    events.on "ready", (adapter) ->
+# Create an adapter, passing in the events object
+Mongo.Adapter.make
+  events: events
+  port: 27018
+  host: "127.0.0.1"
+  database: "foo"
+  options:
+    auto_reconnect: true
 
-      # First, let's add a second event handler to 
-      # close the connection and exit
-      events.on "error", ->
-        adapter.close
-        process.exit -1
-  
-      # Okay, let's get the collection we're going to use
-      (adapter.collection "bar")
-  
-      # Once we have the collection, let's put something
-      .on "success", (collection) ->
-        (collection.put baz: "hello")
-    
-        # If the put works, try getting the same thing back out
-        .on "success", (object) ->
-          (collection.get object.key)
-          
-          # If the get works, show the result and close the 
-          # adapter because we're done!
-          .on "success", (object) ->
-            log object
-            adapter.close()
+# When the adapter is ready, we can do stuff
+events.on "ready", (adapter) ->
+
+  # First, let's add a second event handler to 
+  # close the connection and exit
+  events.on "error", ->
+    adapter.close
+    process.exit -1
+
+  # Okay, let's get the collection we're going to use
+  (adapter.collection "bar")
+
+  # Once we have the collection, let's put something
+  .on "success", (collection) ->
+    (collection.put "baz", baz: "hello")
+
+    # If the put works, try getting the same thing back out
+    .on "success", (object) ->
+      (collection.get "baz")
+
+      # If the get works, show the result and close the 
+      # adapter because we're done!
+      .on "success", (object) ->
+        log object
+        adapter.close()
+```
 
 # Adapter API
 
