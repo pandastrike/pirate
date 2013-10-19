@@ -14,7 +14,9 @@
     "sleep": "1.1.1",
     "typely": "0.0.0"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "testify": "~0.2.8"
+  },
   "scripts": {
     "test": "coffee test/test.coffee"
   },
