@@ -15,7 +15,6 @@ adapter = new ElasticSearch.Adapter
   secure: false
   events: events
 
-
 events.once "ready", (adapter) ->
 
   console.log "Database is ready"
@@ -46,7 +45,7 @@ events.once "ready", (adapter) ->
     
     # Create mapping
     go ->
-      console.log "Creating mapping..."
+      console.log "Creating mapping"
       adapter.events.source (events) ->
         adapter.client.putMapping(
           "books"
@@ -69,4 +68,12 @@ events.once "ready", (adapter) ->
         events: events
 
       Suite = require "./interface"
-      Suite.run("Elastic Adapter", adapter)
+      suite = Suite.run "Elastic Adapter", adapter, ->
+        adapter.events.source (events) ->
+          adapter.client.deleteIndex(
+            "books"
+            (err, data) ->
+              console.log "Deleted index"
+              adapter.close()
+              events.callback err, data
+          )

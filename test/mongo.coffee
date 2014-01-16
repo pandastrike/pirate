@@ -12,4 +12,5 @@ adapter = new Mongo.Adapter
   options:
     auto_reconnect: true
 
-Suite.run("Mongo Adapter", adapter)
+Suite.run "Mongo Adapter", adapter, ->
+  adapter.close()
