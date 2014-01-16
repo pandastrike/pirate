@@ -19,7 +19,7 @@
     "coffee-script": "~1.6.3"
   },
   "scripts": {
-    "prepublish": "coffee -o lib/ -c src/*.coffee && coffee -o test/ -c test/*.coffee"
+    "prepublish": "coffee -o lib/ -c src/*.coffee"
   },
   "repository": {
     "type": "git",

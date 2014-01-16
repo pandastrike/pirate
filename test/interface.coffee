@@ -28,7 +28,7 @@ module.exports = class TestSuite
 
   accessCollection: (context) ->
     context.test "Access a collection", (context) =>
-      events = @adapter.collection("books")
+      events = @adapter.collection("books", "book")
       events.once "error", (error) => context.fail(error)
       events.once "success", (@collection) => @putKeyValue(context)
 

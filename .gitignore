@@ -3,4 +3,3 @@ node_modules
 logs
 .log
 lib
-test/*.js
