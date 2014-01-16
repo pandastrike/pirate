@@ -53,9 +53,9 @@ events.once "ready", (adapter) ->
           "book"
           book:
             properties:
-              title: type: "string"
-              author: type: "string"
-              published: type: "string"
+              foo: type: "number"
+              bar: type: "number"
+              baz: type: "number"
           (err, data) -> 
             console.log "Created mapping"
             events.callback err, data

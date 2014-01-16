@@ -1,5 +1,6 @@
 Testify = require "testify"
 assert = require "assert"
+{sleep} = require "sleep"
 
 module.exports = class TestSuite
 
@@ -37,6 +38,7 @@ module.exports = class TestSuite
       events.once "success", => @getKeyValue(context)
 
   getKeyValue: (context) ->
+    sleep 1
     context.test "Get a key-value pair", (context) =>
       events = @collection.get(@key)
       events.once "error", (error) => context.fail(error)
