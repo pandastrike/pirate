@@ -1,6 +1,6 @@
 {
   "name": "pirate",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "A simple storage interface with adapters for different storage systems",
   "main": "lib/index.js",
   "directories": {

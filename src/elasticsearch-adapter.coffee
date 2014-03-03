@@ -9,7 +9,8 @@ defaults =
   secure: true
   
 class Adapter
-  
+  esVersion: major: 0, minor: 0, patch: 0
+
   @make: (configuration) ->
     new @ configuration
   
@@ -27,7 +28,16 @@ class Adapter
       # Create the client object
       @client = new ElasticSearchClient(options)
 
-      @events.emit "ready", @
+      # get Elasticsearch server version
+      @client.createCall({path: "", method: "GET"}, options)
+        .on "data", (data) =>
+          versionString = JSON.parse(data).version.number
+          versionTokens = versionString.split(".")
+          @esVersion = {major: parseInt(versionTokens[0]), minor: parseInt(versionTokens[1]), patch: parseInt(versionTokens[2])}
+          @events.emit "ready", @
+        .on "error", (err) =>
+          @events.emit "error", err
+        .exec()
               
   collection: (index, type) ->
     @events.source (events) =>
@@ -41,18 +51,23 @@ class Adapter
   close: ->
     
 class Collection
-  
+
   @make: (options) ->
     new @ options
-  
+
   constructor: ({@index,@type,@events,@adapter}) ->
   
   find: overload (match, fail) ->    
     match "array", (keys) -> 
       @events.source (events) =>
         events.safely =>
+          countQueryJSON = null
+          if @adapter.esVersion.major >= 1 and @adapter.esVersion.minor >= 0 and @adapter.esVersion.patch >= 1
+            countQueryJSON = {query: {terms: {_id: keys}}}
+          else
+            countQueryJSON = {terms: {_id: keys}}
           @adapter.client.count(
-            @index, @type, {terms: {_id: keys}}
+            @index, @type, countQueryJSON
           )
           .on "data", (data) => 
             jsonData = JSON.parse(data)
@@ -186,8 +201,14 @@ class Collection
     
   count: -> 
     @events.source (events) => 
+      # hack for ES bug in count queries before version 1.0.1
+      # count queries were not expected to be wrapped in 'query'
+      if @adapter.esVersion.major >= 1 and @adapter.esVersion.minor >= 0 and @adapter.esVersion.patch >= 1
+        countQueryJSON = {query: {match_all: {}}}
+      else
+        countQueryJSON = {match_all: {}}
       @adapter.client.count(
-          @index, @type, {match_all: {}}
+          @index, @type, countQueryJSON
         )
         .on "data", (data) -> 
           jsonData = JSON.parse(data)
