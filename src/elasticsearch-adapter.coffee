@@ -203,6 +203,7 @@ class Collection
     @events.source (events) => 
       # hack for ES bug in count queries before version 1.0.1
       # count queries were not expected to be wrapped in 'query'
+      countQueryJSON = null
       if @adapter.esVersion.major >= 1 and @adapter.esVersion.minor >= 0 and @adapter.esVersion.patch >= 1
         countQueryJSON = {query: {match_all: {}}}
       else
