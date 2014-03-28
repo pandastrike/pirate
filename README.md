@@ -1,6 +1,6 @@
 # Argh! What's This?
 
-Pirate provides a simple key-value storage interface with adapters for different storage systems. Pirate currently supports MongoDB, Elasticsearch, and in-memory storage.
+Pirate provides a simple key-value storage interface with adapters for different storage systems. Pirate currently supports MongoDB, Elasticsearch, Redis and in-memory storage.
 
 ## Benefits
 
