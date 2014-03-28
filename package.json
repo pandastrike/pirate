@@ -1,6 +1,6 @@
 {
   "name": "pirate",
-  "version": "0.9.5",
+  "version": "0.9.6",
   "description": "A simple storage interface with adapters for different storage systems",
   "main": "lib/index.js",
   "directories": {
@@ -11,6 +11,7 @@
     "elasticsearchclient": "0.5.x",
     "mongodb": "1.2.x",
     "mutual": "0.4.x",
+    "redis": "~0.10.1",
     "sleep": "1.1.1",
     "typely": "0.0.0"
   },
@@ -28,7 +29,9 @@
   "keywords": [
     "storage",
     "interface",
-    "mongo"
+    "mongo",
+    "elasticsearch",
+    "redis"
   ],
   "author": "Dan Yoder",
   "license": "MIT",

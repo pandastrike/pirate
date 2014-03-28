@@ -1,41 +1,38 @@
 {type,merge} = require "fairmont"
 {overload} = require "typely"
-
-ElasticSearchClient = require('elasticsearchclient')
+ElasticSearchClient = require("elasticsearchclient")
+BaseAdapter = require ("./base-adapter")
 
 defaults = 
   port: 9200
   host: "127.0.0.1"
   secure: true
   
-class Adapter
+class Adapter extends BaseAdapter
   esVersion: major: 0, minor: 0, patch: 0
 
   @make: (configuration) ->
     new @ configuration
   
-  constructor: (configuration) ->
-    configuration = merge( defaults, configuration )
-    {@events} = configuration
-    options = 
-      host: configuration.host, 
-      port: configuration.port, 
-      secure: configuration.secure
+  constructor: (@configuration) ->
+    @configuration = merge(defaults,@configuration)
+    super(@configuration)
 
     # Make sure we convert exceptions into error events
     @events.safely =>
-      
       # Create the client object
-      @client = new ElasticSearchClient(options)
+      @client = new ElasticSearchClient(@configuration)
 
       # get Elasticsearch server version
-      @client.createCall({path: "", method: "GET"}, options)
+      @client.createCall({path: "", method: "GET"}, @configuration)
         .on "data", (data) =>
           versionString = JSON.parse(data).version.number
           versionTokens = versionString.split(".")
           @esVersion = {major: parseInt(versionTokens[0]), minor: parseInt(versionTokens[1]), patch: parseInt(versionTokens[2])}
+          @log "ElasticsearchAdapter: Connected to Elasticsearch server @ #{@configuration.host}:#{@configuration.port} v#{versionString}"
           @events.emit "ready", @
         .on "error", (err) =>
+          @log "ElasticsearchAdapter: Error connecting to Elasticsearch server @ #{@configuration.host}:#{@configuration.port} - #{err}"
           @events.emit "error", err
         .exec()
               
@@ -46,6 +43,7 @@ class Adapter
         type: type
         events: @events
         adapter: @
+        log: @log
       events.emit "success", result
   
   close: ->
@@ -55,7 +53,7 @@ class Collection
   @make: (options) ->
     new @ options
 
-  constructor: ({@index,@type,@events,@adapter}) ->
+  constructor: ({@index,@type,@events,@adapter,@log}) ->
   
   find: overload (match, fail) ->    
     match "array", (keys) -> 

@@ -51,7 +51,7 @@ module.exports = class TestSuite
         if @collection.find?
           @findValues(context)
         else
-          @deleteKey(context)
+          @allValues(context)
 
   findValues: (context) ->
     context.test "Get a set of keys", (context) =>
@@ -61,8 +61,18 @@ module.exports = class TestSuite
         thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz
         thatValue = foo: value.foo, bar: value.bar, baz: value.baz
         assert.deepEqual thatValue, thisValue
+        @allValues(context)
+  
+  allValues: (context) ->
+    context.test "Get all key-value pairs", (context) =>
+      events = @collection.all()
+      events.once "error", (error) => context.fail(error)
+      events.once "success", ([value]) =>
+        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz
+        thatValue = foo: value.foo, bar: value.bar, baz: value.baz
+        assert.deepEqual thatValue, thisValue
         @deleteKey(context)
-        
+
   deleteKey: (context) ->
     context.test "Delete a key-value pair", (context) =>
       events = @collection.delete @key

@@ -1,7 +1,7 @@
 {type,merge} = require "fairmont"
 {overload} = require "typely"
-
 MongoDB = require "mongodb"
+BaseAdapter = require ("./base-adapter")
 
 defaults = 
   port: 27017
@@ -9,15 +9,16 @@ defaults =
   options:
     auto_reconnect: true
   
-class Adapter
+class Adapter extends BaseAdapter
   
   @make: (configuration) ->
     new @ configuration
   
-  constructor: (configuration) ->
-    configuration = merge( defaults, configuration )
-    {@events} = configuration
-    {host, port, options, database} = configuration
+  constructor: (@configuration) ->
+    @configuration = merge(defaults,@configuration)
+    super(@configuration)
+
+    {host, port, options, database} = @configuration
 
     # Make sure we convert exceptions into error events
     @events.safely =>
@@ -31,8 +32,10 @@ class Adapter
       # Open the database
       @database.open (error,database) =>
         unless error?
+          @log "MongoAdapter: Connected to MongoDB server @ #{@host}:#{port}"
           @events.emit "ready", @
         else
+          @log "MongoAdapter: Error connecting to MongoDB server @ #{host}:#{port} - #{error}"
           @events.emit "error", error
               
   collection: (name) ->
@@ -44,6 +47,7 @@ class Adapter
               collection: collection
               events: @events
               adapter: @
+              log: @log
         else
           events.emit "error", error
 
@@ -56,7 +60,7 @@ class Collection
   @make: (options) ->
     new @ options
   
-  constructor: ({@events,@collection,@adapter}) ->
+  constructor: ({@events,@collection,@adapter,@log}) ->
   
   find: overload (match, fail) ->
     

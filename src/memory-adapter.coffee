@@ -1,14 +1,13 @@
 {type} = require "fairmont"
+BaseAdapter = require ("./base-adapter")
 
-MongoDB = require "mongodb"
-
-class Adapter
+class Adapter extends BaseAdapter
   
   @make: (configuration) ->
     new @ configuration
   
   constructor: (@configuration) ->
-    {@events} = @configuration
+    super(@configuration)
     @database = {}
     @events.emit "ready", @
               
@@ -18,6 +17,7 @@ class Adapter
         collection: {}
         events: @events
         adapter: @
+        log: @log
       events.emit "success", @database[name]
   
   close: ->
@@ -27,7 +27,7 @@ class Collection
   @make: (options) ->
     new @ options
   
-  constructor: ({events,@collection,@adapter}) ->
+  constructor: ({events,@collection,@adapter,@log}) ->
     @events = events.source()
         
   get: (key) ->
