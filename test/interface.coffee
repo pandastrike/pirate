@@ -36,6 +36,14 @@ module.exports = class TestSuite
     context.test "Put a key-value pair", (context) =>
       events = @collection.put(@key, @value)
       events.once "error", (error) => context.fail(error)
+      events.once "success", => @patchKeyValue(context)
+
+  patchKeyValue: (context) ->
+    sleep 1
+    context.test "Patch a key-value pair", (context) =>
+      @value.qux = 8
+      events = @collection.patch(@key, @value)
+      events.once "error", (error) => context.fail(error)
       events.once "success", => @getKeyValue(context)
 
   getKeyValue: (context) ->
@@ -44,22 +52,18 @@ module.exports = class TestSuite
       events = @collection.get(@key)
       events.once "error", (error) => context.fail(error)
       events.once "success", (value) =>
-        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz
-        thatValue = foo: value.foo, bar: value.bar, baz: value.baz
+        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz, qux: @value.qux
+        thatValue = foo: value.foo, bar: value.bar, baz: value.baz, qux: value.qux
         assert.deepEqual thatValue, thisValue
-        # memory adapter does not have a find method
-        if @collection.find?
-          @findValues(context)
-        else
-          @allValues(context)
+        @findValues(context)
 
   findValues: (context) ->
     context.test "Get a set of keys", (context) =>
       events = @collection.find [@key, "dummy"]
       events.once "error", (error) => context.fail(error)
       events.once "success", ([value]) =>
-        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz
-        thatValue = foo: value.foo, bar: value.bar, baz: value.baz
+        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz, qux: @value.qux
+        thatValue = foo: value.foo, bar: value.bar, baz: value.baz, qux: value.qux
         assert.deepEqual thatValue, thisValue
         @allValues(context)
   
@@ -68,8 +72,8 @@ module.exports = class TestSuite
       events = @collection.all()
       events.once "error", (error) => context.fail(error)
       events.once "success", ([value]) =>
-        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz
-        thatValue = foo: value.foo, bar: value.bar, baz: value.baz
+        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz, qux: @value.qux
+        thatValue = foo: value.foo, bar: value.bar, baz: value.baz, qux: value.qux
         assert.deepEqual thatValue, thisValue
         @deleteKey(context)
 

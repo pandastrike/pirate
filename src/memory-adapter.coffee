@@ -1,5 +1,6 @@
 {type} = require "fairmont"
-BaseAdapter = require ("./base-adapter")
+{overload} = require "typely"
+{BaseAdapter,BaseCollection} = require ("./base-adapter")
 
 class Adapter extends BaseAdapter
   
@@ -22,14 +23,21 @@ class Adapter extends BaseAdapter
   
   close: ->
     
-class Collection
+class Collection extends BaseCollection
   
   @make: (options) ->
     new @ options
   
   constructor: ({events,@collection,@adapter,@log}) ->
     @events = events.source()
-        
+
+  find: overload (match, fail) ->
+    match "array", (keys) -> 
+      @events.source (events) =>
+        values = keys.map (key) => @collection[key]
+        events.emit "success", values
+    match "string", (key) -> @get(key)
+
   get: (key) ->
     @events.source (events) =>
       events.emit "success", @collection[key]

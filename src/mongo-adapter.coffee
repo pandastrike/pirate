@@ -1,7 +1,7 @@
 {type,merge} = require "fairmont"
 {overload} = require "typely"
 MongoDB = require "mongodb"
-BaseAdapter = require ("./base-adapter")
+{BaseAdapter,BaseCollection} = require ("./base-adapter")
 
 defaults = 
   port: 27017
@@ -32,7 +32,7 @@ class Adapter extends BaseAdapter
       # Open the database
       @database.open (error,database) =>
         unless error?
-          @log "MongoAdapter: Connected to MongoDB server @ #{@host}:#{port}"
+          @log "MongoAdapter: Connected to MongoDB server @ #{host}:#{port}"
           @events.emit "ready", @
         else
           @log "MongoAdapter: Error connecting to MongoDB server @ #{host}:#{port} - #{error}"
@@ -55,7 +55,7 @@ class Adapter extends BaseAdapter
   close: ->
     @database.close()
     
-class Collection
+class Collection extends BaseCollection
   
   @make: (options) ->
     new @ options

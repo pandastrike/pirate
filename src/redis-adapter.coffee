@@ -1,7 +1,7 @@
 {type,merge} = require "fairmont"
 {overload} = require "typely"
 redis = require "redis"
-BaseAdapter = require ("./base-adapter")
+{BaseAdapter,BaseCollection} = require ("./base-adapter")
 
 defaults = 
   port: 6379
@@ -37,7 +37,7 @@ class Adapter extends BaseAdapter
   
   close: -> @client.end()
     
-class Collection
+class Collection extends BaseCollection
   
   @make: (options) ->
     new @ options
@@ -74,7 +74,7 @@ class Collection
     @events.source (events) =>
       @adapter.client.hset @name, key, JSON.stringify(object), (err,res) =>
         unless err?
-          events.emit "success", res
+          events.emit "success", object
         else
           events.emit "error", err
 
@@ -82,7 +82,7 @@ class Collection
     @events.source (events) =>
       @adapter.client.hdel @name, key, (err,res) =>
         unless err?
-          events.emit "success", res
+          events.emit "success", {_id: key}
         else
           events.emit "error", err
 

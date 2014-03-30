@@ -1,4 +1,4 @@
-{type} = require "fairmont"
+{type,merge} = require "fairmont"
 
 class BaseAdapter
 
@@ -12,4 +12,25 @@ class BaseAdapter
     else
       @log = -> # do nothing
 
-module.exports = BaseAdapter
+
+class BaseCollection
+
+  patch: (key,object) ->
+    @events.source (events) =>
+      _events = @get(key)
+      _events.on "success", (data) =>
+        if data?
+          if type(data) == "array"
+            if type(object) == "array"
+              data = data.concat(object)
+            else
+              data.push(object)
+          else if type(data) == "object"
+            data = merge(data,object)
+        __events = @put(key, data)
+        __events.on "success", (data) -> events.emit "success", data
+        __events.on "error", (err) -> events.emit "error", err
+      _events.on "error", (err) -> events.emit "error", err
+
+
+module.exports = {BaseAdapter,BaseCollection}

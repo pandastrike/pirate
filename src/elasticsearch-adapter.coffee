@@ -1,7 +1,7 @@
 {type,merge} = require "fairmont"
 {overload} = require "typely"
 ElasticSearchClient = require("elasticsearchclient")
-BaseAdapter = require ("./base-adapter")
+{BaseAdapter,BaseCollection} = require ("./base-adapter")
 
 defaults = 
   port: 9200
@@ -48,7 +48,7 @@ class Adapter extends BaseAdapter
   
   close: ->
     
-class Collection
+class Collection extends BaseCollection
 
   @make: (options) ->
     new @ options
@@ -147,13 +147,22 @@ class Collection
           .on "data", (data) => 
             jsonData = JSON.parse(data)
             unless jsonData.error?
-              events.emit "success", jsonData
+              events.emit "success", object
             else
               events.emit "error", jsonData.error
           .on "error", (err) -> 
             events.emit "error", err
           .exec()
         
+  patch: (key,object) ->
+    @events.source (events) =>
+      _events = @get(key)
+      _events.on "success", (data) =>
+        data = merge(data, object) if data?
+        __events = @put(key, data)
+        __events.on "success", (data) -> events.emit "success", data
+        __events.on "error", (err) -> events.emit "error", err
+      _events.on "error", (err) -> events.emit "error", err
 
   delete: overload (match,fail) ->
     match "string", (key) -> @delete( _id: key )
@@ -165,7 +174,7 @@ class Collection
           .on "data", (data) -> 
             jsonData = JSON.parse(data)
             unless jsonData.error?
-              events.emit "success"
+              events.emit "success", key
             else
               events.emit "error", jsonData.error
           .on "error", (err) -> 
