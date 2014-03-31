@@ -82,7 +82,7 @@ class Collection extends BaseCollection
     @events.source (events) =>
       @adapter.client.hdel @name, key, (err,res) =>
         unless err?
-          events.emit "success", {_id: key}
+          events.emit "success"
         else
           events.emit "error", err
 

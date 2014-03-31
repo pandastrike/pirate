@@ -51,7 +51,7 @@ class Collection extends BaseCollection
     @events.source (events) =>
       object = @collection[key]
       delete @collection[key]
-      events.emit "success", object
+      events.emit "success"
           
   all: ->
     @events.source (events) =>

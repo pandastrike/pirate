@@ -155,6 +155,9 @@ class Collection extends BaseCollection
           .exec()
         
   patch: (key,object) ->
+    # even though we could use ES API 'update'
+    # we are using get and index 
+    # as we need to return the new document 
     @events.source (events) =>
       _events = @get(key)
       _events.on "success", (data) =>
@@ -174,7 +177,7 @@ class Collection extends BaseCollection
           .on "data", (data) -> 
             jsonData = JSON.parse(data)
             unless jsonData.error?
-              events.emit "success", key
+              events.emit "success"
             else
               events.emit "error", jsonData.error
           .on "error", (err) -> 
