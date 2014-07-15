@@ -1,6 +1,6 @@
 {
   "name": "pirate",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "A simple storage interface with adapters for different storage systems",
   "main": "lib/index.js",
   "directories": {
@@ -12,11 +12,11 @@
     "mongodb": "1.2.x",
     "mutual": "0.4.x",
     "redis": "~0.10.1",
-    "sleep": "1.1.1",
     "typely": "0.0.0"
   },
   "devDependencies": {
     "testify": "~0.2.8",
+    "sleep": "1.1.1",
     "coffee-script": "~1.6.3"
   },
   "scripts": {
