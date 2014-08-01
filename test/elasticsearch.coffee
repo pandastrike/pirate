@@ -2,6 +2,7 @@
 {EventChannel} = require "mutual"
 sleep = require "sleep"
 util = require("util")
+Suite = require "./interface"
 
 events = new EventChannel
 
@@ -24,56 +25,55 @@ events.once "ready", (adapter) ->
     # Delete index
     go ->
       console.log "Deleting index..."
-      adapter.events.source (events) ->
+      events.source (_events) ->
         adapter.client.deleteIndex(
           "books"
           (err, data) ->
             console.log "Deleted index"
-            events.callback err, data
+            _events.callback err, data
         )
 
     # Create index
     go ->
       console.log "Creating index..."
-      adapter.events.source (events) ->
+      events.source (_events) ->
         adapter.client.createIndex(
           "books"
           (err, data) -> 
             console.log "Created index"
-            events.callback err, data
+            _events.callback err, data
         )
     
     # Create mapping
     go ->
       console.log "Creating mapping"
-      adapter.events.source (events) ->
+      events.source (_events) ->
         adapter.client.putMapping(
           "books"
           "book"
           book:
             properties:
-              foo: type: "number"
-              bar: type: "number"
-              baz: type: "number"
+              foo: type: "integer"
+              bar: type: "integer"
+              baz: type: "integer"
           (err, data) -> 
             console.log "Created mapping"
-            events.callback err, data
+            _events.callback err, data
         )
 
-
+    go ->
       adapter = new ElasticSearch.Adapter
         port: 9200
         host: "127.0.0.1"
         secure: false
         events: events
 
-      Suite = require "./interface"
-      suite = Suite.run "Elastic Adapter", adapter, ->
-        adapter.events.source (events) ->
+      Suite.run "Elastic Adapter", adapter, ->
+        events.source (_events) ->
           adapter.client.deleteIndex(
             "books"
             (err, data) ->
               console.log "Deleted index"
               adapter.close()
-              events.callback err, data
+              _events.callback err, data
           )
