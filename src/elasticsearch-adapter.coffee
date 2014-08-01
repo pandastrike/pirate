@@ -142,7 +142,7 @@ class Collection extends BaseCollection
     match "object", "object", "object", (key,object,options) -> 
       @events.source (events) =>
         @adapter.client.index(
-            @index, @type, object, (if key._id? then key._id else null), options
+            @index, @type, object, key._id, options
           )
           .on "data", (data) => 
             jsonData = JSON.parse(data)
@@ -154,18 +154,27 @@ class Collection extends BaseCollection
             events.emit "error", err
           .exec()
         
-  patch: (key,object) ->
-    # even though we could use ES API 'update'
-    # we are using get and index 
-    # as we need to return the new document 
-    @events.source (events) =>
-      _events = @get(key)
-      _events.on "success", (data) =>
-        data = merge(data, object) if data?
-        __events = @put(key, data)
-        __events.on "success", (data) -> events.emit "success", data
-        __events.on "error", (err) -> events.emit "error", err
-      _events.on "error", (err) -> events.emit "error", err
+  patch: overload (match,fail) ->
+    match "string", "object", (key,object) ->
+      @patch( _id: key, object, {} )
+    match "string", "object", "object", (key,object,options) ->
+      @patch( _id: key, object, options )
+    match "object", "object", (key,object) ->
+      @patch( key, object, {} )
+    match "object", "object", "object", (key,object,options) ->
+      # even though we could use ES API 'update'
+      # we are using get and index
+      # as we need to return the new document
+      @events.source (events) =>
+        _events = @get(key._id)
+        _events.on "success", (data) =>
+          delete data._id
+          delete data.score
+          data = merge(data, object) if data?
+          __events = @put(key._id, data, options)
+          __events.on "success", (data) -> events.emit "success", data
+          __events.on "error", (err) -> events.emit "error", err
+        _events.on "error", (err) -> events.emit "error", err
 
   delete: overload (match,fail) ->
     match "string", (key) -> @delete( _id: key )
