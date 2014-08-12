@@ -59,13 +59,8 @@ class Collection extends BaseCollection
     match "array", (keys) -> 
       @events.source (events) =>
         events.safely =>
-          countQueryJSON = null
-          if @adapter.esVersion.major >= 1 and @adapter.esVersion.minor >= 0 and @adapter.esVersion.patch >= 1
-            countQueryJSON = {query: {terms: {_id: keys}}}
-          else
-            countQueryJSON = {terms: {_id: keys}}
           @adapter.client.count(
-            @index, @type, countQueryJSON
+            @index, @type, {query: {terms: {_id: keys}}}
           )
           .on "data", (data) => 
             jsonData = JSON.parse(data)
@@ -195,40 +190,33 @@ class Collection extends BaseCollection
           
   all: ->
     @events.source (events) =>
-        events.safely =>
-          countEvents = @count()
-          countEvents.on "success", (resultCount) =>
-            @adapter.client.search(
-                @index, @type, query: {match_all: {}}, {size: resultCount}
-              )
-              .on "data", (data) -> 
-                jsonData = JSON.parse(data)
-                unless jsonData.error?
-                  results = jsonData.hits.hits.map (dataElem) ->
-                    result = dataElem._source
-                    result._id = dataElem._id
-                    result.score = dataElem._score
-                    result
-                  events.emit "success", results
-                else
-                  events.emit "error", jsonData.error
-              .on "error", (err) -> 
-                events.emit "error", err
-              .exec()
-          countEvents.on "error", (err) ->
-            events.emit "error", err
+      events.safely =>
+        countEvents = @count()
+        countEvents.on "success", (resultCount) =>
+          @adapter.client.search(
+              @index, @type, query: {match_all: {}}, {size: resultCount}
+            )
+            .on "data", (data) -> 
+              jsonData = JSON.parse(data)
+              unless jsonData.error?
+                results = jsonData.hits.hits.map (dataElem) ->
+                  result = dataElem._source
+                  result._id = dataElem._id
+                  result.score = dataElem._score
+                  result
+                events.emit "success", results
+              else
+                events.emit "error", jsonData.error
+            .on "error", (err) -> 
+              events.emit "error", err
+            .exec()
+        countEvents.on "error", (err) ->
+          events.emit "error", err
     
   count: -> 
     @events.source (events) => 
-      # hack for ES bug in count queries before version 1.0.1
-      # count queries were not expected to be wrapped in 'query'
-      countQueryJSON = null
-      if @adapter.esVersion.major >= 1 and @adapter.esVersion.minor >= 0 and @adapter.esVersion.patch >= 1
-        countQueryJSON = {query: {match_all: {}}}
-      else
-        countQueryJSON = {match_all: {}}
       @adapter.client.count(
-          @index, @type, countQueryJSON
+          @index, @type, {query: {match_all: {}}}
         )
         .on "data", (data) -> 
           jsonData = JSON.parse(data)
