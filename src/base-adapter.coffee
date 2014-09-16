@@ -4,7 +4,7 @@ class BaseAdapter
 
   constructor: (@configuration) ->
     {@events} = @configuration
-    
+
     if @configuration.log? and type(@configuration.log) == "function"
       @log = (msg) -> @configuration.log(msg)
     else if !@configuration.log? or @configuration.log == true

@@ -3,15 +3,15 @@
 {BaseAdapter,BaseCollection} = require ("./base-adapter")
 
 class Adapter extends BaseAdapter
-  
+
   @make: (configuration) ->
     new @ configuration
-  
+
   constructor: (@configuration) ->
     super(@configuration)
     @database = {}
     @events.emit "ready", @
-              
+
   collection: (name) ->
     @events.source (events) =>
       @database[name] = Collection.make
@@ -20,19 +20,18 @@ class Adapter extends BaseAdapter
         adapter: @
         log: @log
       events.emit "success", @database[name]
-  
+
   close: ->
-    
+
 class Collection extends BaseCollection
-  
+
   @make: (options) ->
     new @ options
-  
-  constructor: ({events,@collection,@adapter,@log}) ->
-    @events = events.source()
+
+  constructor: ({@events,@collection,@adapter,@log}) ->
 
   find: overload (match, fail) ->
-    match "array", (keys) -> 
+    match "array", (keys) ->
       @events.source (events) =>
         values = keys.map (key) => @collection[key]
         events.emit "success", values
@@ -52,17 +51,17 @@ class Collection extends BaseCollection
       object = @collection[key]
       delete @collection[key]
       events.emit "success"
-          
+
   all: ->
     @events.source (events) =>
       values = (@collection[key] for key in Object.keys( @collection ))
       events.emit "success", values
-    
+
   count: ->
-    @events.source (events) => 
-      events.emit "success", 
+    @events.source (events) =>
+      events.emit "success",
         Object.keys( @collection ).length
 
-module.exports = 
+module.exports =
   Adapter: Adapter
   Collection: Collection
