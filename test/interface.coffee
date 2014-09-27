@@ -1,85 +1,56 @@
-Testify = require "testify"
 assert = require "assert"
-{sleep} = require "sleep"
 
-module.exports = class TestSuite
+{async, call} = do ->
+  {lift, call} = require "when/generator"
+  {async: lift, call}
 
-  @run: (title, adapter, onCompletion) -> 
-    suite = new @(title, adapter)
-    suite.run(onCompletion)
 
-  constructor: (@title, @adapter) ->
-    @key = "test-#{Date.now()}"
-    @value = foo: 1, bar: 3, baz: 5
+test = async (name, fn) ->
+  try
+    yield fn()
+    console.log name, "-- pass"
+  catch error
+    console.log name, "-- fail", error
 
-  run: (onCompletion) ->
-    @adapter.events.on "error", => @adapter.close()
-    Testify.test "Pirate Adapter Tests - #{@title}", (context) =>
-      @initializeAdapter(context)
-    Testify.emitter.on("done", onCompletion) if onCompletion?
 
-  initializeAdapter: (context) ->
-    # We're assuming the client initialized the adapter --
-    # we're just catching the ready event
-    context.test "Initialize adapter", (context) =>
-      @adapter.events.once "error", (error) => context.fail(error)
-      @adapter.events.once "ready", =>
-        @accessCollection(context)
+module.exports = async (adapter) ->
+  try
 
-  accessCollection: (context) ->
-    context.test "Access a collection", (context) =>
-      events = @adapter.collection("books", "book")
-      events.once "error", (error) => context.fail(error)
-      events.once "success", (@collection) => @putKeyValue(context)
+    book =
+      title: "War and Peace"
+      author: "Leo Tolstoy"
+      published: "1969"
+    key = "war-and-peace"
+    books = null
 
-  putKeyValue: (context) ->
-    context.test "Put a key-value pair", (context) =>
-      events = @collection.put(@key, @value)
-      events.once "error", (error) => context.fail(error)
-      events.once "success", => @patchKeyValue(context)
+    yield test "Connect to an adapter", async ->
+      yield adapter.connect()
 
-  patchKeyValue: (context) ->
-    sleep 1
-    context.test "Patch a key-value pair", (context) =>
-      @value.qux = 8
-      events = @collection.patch(@key, @value)
-      events.once "error", (error) => context.fail(error)
-      events.once "success", => @getKeyValue(context)
+    yield test "Load a collection", async ->
+      books = yield adapter.collection "books"
+      assert.equal books.put?, true
 
-  getKeyValue: (context) ->
-    sleep 1
-    context.test "Get a key-value pair", (context) =>
-      events = @collection.get(@key)
-      events.once "error", (error) => context.fail(error)
-      events.once "success", (value) =>
-        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz, qux: @value.qux
-        thatValue = foo: value.foo, bar: value.bar, baz: value.baz, qux: value.qux
-        assert.deepEqual thatValue, thisValue
-        @findValues(context)
+    yield test "Put an object into a collection", async ->
+      yield books.put key, book
 
-  findValues: (context) ->
-    context.test "Get a set of keys", (context) =>
-      events = @collection.find [@key, "dummy"]
-      events.once "error", (error) => context.fail(error)
-      events.once "success", ([value]) =>
-        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz, qux: @value.qux
-        thatValue = foo: value.foo, bar: value.bar, baz: value.baz, qux: value.qux
-        assert.deepEqual thatValue, thisValue
-        @allValues(context)
-  
-  allValues: (context) ->
-    context.test "Get all key-value pairs", (context) =>
-      events = @collection.all()
-      events.once "error", (error) => context.fail(error)
-      events.once "success", ([value]) =>
-        thisValue = foo: @value.foo, bar: @value.bar, baz: @value.baz, qux: @value.qux
-        thatValue = foo: value.foo, bar: value.bar, baz: value.baz, qux: value.qux
-        assert.deepEqual thatValue, thisValue
-        @deleteKey(context)
+    yield test "Get an object from a collection", async ->
+      _book = yield books.get key
+      assert.deepEqual book, _book
 
-  deleteKey: (context) ->
-    context.test "Delete a key-value pair", (context) =>
-      events = @collection.delete @key
-      events.once "error", (error) => context.fail(error)
-      events.once "success", =>
-        context.pass()
+    yield test "Find an object in a collection", async ->
+      [_book] = yield books.find key
+      assert.deepEqual _book, book
+
+    yield test "Patch an object in a collection", async ->
+      yield books.patch key, published: "1869"
+
+    yield test "Return all the objects in a collection", async ->
+      _books = yield books.all()
+      assert.equal _books.length, 1
+
+    yield test "Delete an object in a collection", async ->
+      yield books.delete key
+      assert.equal (yield books.get key), null
+
+  catch error
+    console.log error
