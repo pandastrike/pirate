@@ -2,7 +2,7 @@
   "name": "pirate",
   "version": "0.10.1",
   "description": "A simple storage interface with adapters for different storage systems",
-  "main": "lib/index.js",
+  "main": "src/index.coffee",
   "directories": {
     "test": "test"
   },
