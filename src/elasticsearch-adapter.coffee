@@ -1,12 +1,11 @@
 {type,merge} = require "fairmont"
 {overload} = require "typely"
-ElasticSearchClient = require("elasticsearchclient")
+elasticsearch = require("elasticsearch")
 {BaseAdapter,BaseCollection} = require ("./base-adapter")
 
 defaults = 
-  port: 9200
-  host: "127.0.0.1"
-  secure: true
+  host: "127.0.0.1:9200"
+  maxSockets: 10
   
 class Adapter extends BaseAdapter
   esVersion: major: 0, minor: 0, patch: 0
@@ -21,20 +20,19 @@ class Adapter extends BaseAdapter
     # Make sure we convert exceptions into error events
     @events.safely =>
       # Create the client object
-      @client = new ElasticSearchClient(@configuration)
+      @client = new elasticsearch.Client(@configuration)
 
       # get Elasticsearch server version
-      @client.createCall({path: "", method: "GET"}, @configuration)
-        .on "data", (data) =>
-          versionString = JSON.parse(data).version.number
+      @client.info()
+        .then (data) =>
+          versionString = data.version.number
           versionTokens = versionString.split(".")
           @esVersion = {major: parseInt(versionTokens[0]), minor: parseInt(versionTokens[1]), patch: parseInt(versionTokens[2])}
-          @log "ElasticsearchAdapter: Connected to Elasticsearch server @ #{@configuration.host}:#{@configuration.port} v#{versionString}"
+          @log "ElasticsearchAdapter: Connected to Elasticsearch server @ #{@configuration.host} v#{versionString}"
           @events.emit "ready", @
-        .on "error", (err) =>
+        , (err) =>
           @log "ElasticsearchAdapter: Error connecting to Elasticsearch server @ #{@configuration.host}:#{@configuration.port} - #{err}"
           @events.emit "error", err
-        .exec()
               
   collection: (index, type) ->
     @events.source (events) =>
@@ -47,6 +45,7 @@ class Adapter extends BaseAdapter
       events.emit "success", result
   
   close: ->
+    @client.close()
     
 class Collection extends BaseCollection
 
@@ -60,21 +59,16 @@ class Collection extends BaseCollection
       @events.source (events) =>
         events.safely =>
           @adapter.client.count(
-            @index, @type, {query: {terms: {_id: keys}}}
+            index: @index, type: @type, body: {query: terms: _id: keys}
           )
-          .on "data", (data) => 
-            jsonData = JSON.parse(data)
-            unless jsonData.error?
-              findEvents = @find({filter: {terms: {_id: keys}}}, {size: jsonData.count})
-              findEvents.on "success", (data) ->
-                events.emit "success", data
-              findEvents.on "error", (err) ->
-                events.emit "error", err
-            else
-              events.emit "error", jsonData.error
-          .on "error", (err) -> 
+          .then (data) => 
+            findEvents = @find({filter: {terms: {_id: keys}}}, {size: data.count})
+            findEvents.on "success", (data) ->
+              events.emit "success", data
+            findEvents.on "error", (err) ->
+              events.emit "error", err
+          , (err) -> 
             events.emit "error", err
-          .exec()
     match "string", (queryString) -> 
       @find( {query: {query_string: {query: queryString, default_operator: "AND"}}}, {} )
     match "object", (query) -> @find( query, {} )
@@ -84,22 +78,17 @@ class Collection extends BaseCollection
       @events.source (events) =>
         events.safely =>
           @adapter.client.search(
-              @index, @type, query, options
-            )
-            .on "data", (data) -> 
-              jsonData = JSON.parse(data)
-              unless jsonData.error?
-                results = jsonData.hits.hits.map (dataElem) ->
-                  result = dataElem._source
-                  result._id = dataElem._id
-                  result.score = dataElem._score
-                  result
-                events.emit "success", results
-              else
-                events.emit "error", jsonData.error
-            .on "error", (err) -> 
-              events.emit "error", err
-            .exec()
+            merge({index: @index, type: @type, body: query}, options)
+          )
+          .then (data) -> 
+            results = data.hits.hits.map (dataElem) ->
+              result = dataElem._source
+              result._id = dataElem._id
+              result.score = dataElem._score
+              result
+            events.emit "success", results
+          , (err) -> 
+            events.emit "error", err
     
   get: overload (match, fail) ->    
     match "string", (key) -> @get( _id: key )
@@ -107,23 +96,18 @@ class Collection extends BaseCollection
       @events.source (events) =>
         events.safely =>
           @adapter.client.search(
-              @index, @type, {filter: {term: query}}
-            )
-            .on "data", (data) -> 
-              jsonData = JSON.parse(data)
-              unless jsonData.error?
-                if jsonData.hits? and jsonData.hits.hits? and jsonData.hits.hits.length == 1
-                  result = jsonData.hits.hits[0]._source
-                  result._id = jsonData.hits.hits[0]._id
-                  result.score = jsonData.hits.hits[0]._score
-                else
-                  result = null
-                events.emit "success", result
-              else
-                events.emit "error", jsonData.error
-            .on "error", (err) -> 
-              events.emit "error", err
-            .exec()
+            index: @index, type: @type, body: {filter: {term: query}}
+          )
+          .then (data) -> 
+            if data.hits? and data.hits.hits? and data.hits.hits.length == 1
+              result = data.hits.hits[0]._source
+              result._id = data.hits.hits[0]._id
+              result.score = data.hits.hits[0]._score
+            else
+              result = null
+            events.emit "success", result
+          , (err) -> 
+            events.emit "error", err
 
   put: overload (match,fail) ->
     match "object", (object) -> 
@@ -137,17 +121,12 @@ class Collection extends BaseCollection
     match "object", "object", "object", (key,object,options) -> 
       @events.source (events) =>
         @adapter.client.index(
-            @index, @type, object, key._id, options
-          )
-          .on "data", (data) => 
-            jsonData = JSON.parse(data)
-            unless jsonData.error?
-              events.emit "success", object
-            else
-              events.emit "error", jsonData.error
-          .on "error", (err) -> 
-            events.emit "error", err
-          .exec()
+          merge({index: @index, type: @type, id: key._id, body: object}, options)
+        )
+        .then (data) => 
+          events.emit "success", object
+        , (err) -> 
+          events.emit "error", err
         
   patch: overload (match,fail) ->
     match "string", "object", (key,object) ->
@@ -175,18 +154,13 @@ class Collection extends BaseCollection
     match "string", (key) -> @delete( _id: key )
     match "object", (key) ->
       @events.source (events) =>
-        @adapter.client.deleteDocument(
-            @index, @type, key._id
-          )
-          .on "data", (data) -> 
-            jsonData = JSON.parse(data)
-            unless jsonData.error?
-              events.emit "success"
-            else
-              events.emit "error", jsonData.error
-          .on "error", (err) -> 
-            events.emit "error", err
-          .exec()
+        @adapter.client.delete(
+          index: @index, type: @type, id: key._id
+        )
+        .then (data) -> 
+          events.emit "success"
+        , (err) -> 
+          events.emit "error", err
           
   all: ->
     @events.source (events) =>
@@ -194,39 +168,29 @@ class Collection extends BaseCollection
         countEvents = @count()
         countEvents.on "success", (resultCount) =>
           @adapter.client.search(
-              @index, @type, query: {match_all: {}}, {size: resultCount}
-            )
-            .on "data", (data) -> 
-              jsonData = JSON.parse(data)
-              unless jsonData.error?
-                results = jsonData.hits.hits.map (dataElem) ->
-                  result = dataElem._source
-                  result._id = dataElem._id
-                  result.score = dataElem._score
-                  result
-                events.emit "success", results
-              else
-                events.emit "error", jsonData.error
-            .on "error", (err) -> 
-              events.emit "error", err
-            .exec()
+            index: @index, type: @type, body: {query: {match_all: {}}}, size: resultCount
+          )
+          .then (data) -> 
+            results = data.hits.hits.map (dataElem) ->
+              result = dataElem._source
+              result._id = dataElem._id
+              result.score = dataElem._score
+              result
+            events.emit "success", results
+          , (err) -> 
+            events.emit "error", err
         countEvents.on "error", (err) ->
           events.emit "error", err
     
   count: -> 
     @events.source (events) => 
       @adapter.client.count(
-          @index, @type, {query: {match_all: {}}}
-        )
-        .on "data", (data) -> 
-          jsonData = JSON.parse(data)
-          unless jsonData.error?
-            events.emit "success", jsonData.count
-          else
-            events.emit "error", jsonData.error
-        .on "error", (err) -> 
-          events.emit "error", err
-        .exec()
+        index: @index, type: @type, body: {query: {match_all: {}}}
+      )
+      .then (data) -> 
+        events.emit "success", data.count
+      , (err) -> 
+        events.emit "error", err
 
 module.exports = 
   Adapter: Adapter

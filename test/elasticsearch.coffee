@@ -11,9 +11,7 @@ events.on "error", (error) ->
   adapter.close()
 
 adapter = new ElasticSearch.Adapter
-  port: 9200
-  host: "127.0.0.1"
-  secure: false
+  host: "127.0.0.1:9200"
   events: events
 
 events.once "ready", (adapter) ->
@@ -24,56 +22,67 @@ events.once "ready", (adapter) ->
 
     # Delete index
     go ->
+      events.source (_events) ->
+        adapter.client.indices.exists(index: "books")
+          .then (data) ->
+            console.log "Index exists" if data
+            _events.emit "success", data
+          , (err) ->
+            _events.emit "error", err
+    go (exists) ->
+      return if !exists 
       console.log "Deleting index..."
       events.source (_events) ->
-        adapter.client.deleteIndex(
-          "books"
-          (err, data) ->
+        adapter.client.indices.delete(index: "books")
+          .then (data) ->
             console.log "Deleted index"
-            _events.callback err, data
-        )
+            _events.emit "success"
+          , (err) ->
+            _events.emit "error", err
 
     # Create index
     go ->
       console.log "Creating index..."
       events.source (_events) ->
-        adapter.client.createIndex(
-          "books"
-          (err, data) -> 
+        adapter.client.indices.create(index: "books")
+          .then (data) ->
             console.log "Created index"
-            _events.callback err, data
-        )
+            _events.emit "success"
+          , (err) ->
+            _events.emit "error", err
     
     # Create mapping
     go ->
       console.log "Creating mapping"
       events.source (_events) ->
-        adapter.client.putMapping(
-          "books"
-          "book"
-          book:
-            properties:
-              foo: type: "integer"
-              bar: type: "integer"
-              baz: type: "integer"
-          (err, data) -> 
-            console.log "Created mapping"
-            _events.callback err, data
+        adapter.client.indices.putMapping(
+          index: "books"
+          type: "book"
+          body:
+            book:
+              properties:
+                foo: type: "integer"
+                bar: type: "integer"
+                baz: type: "integer"
         )
+        .then (data) -> 
+            console.log "Created mapping"
+            _events.emit "success"
+        , (err) ->
+          _events.emit "error", err
 
     go ->
+      adapter.close()
+      
       adapter = new ElasticSearch.Adapter
-        port: 9200
-        host: "127.0.0.1"
-        secure: false
+        host: "127.0.0.1:9200"
         events: events
 
-      Suite.run "Elastic Adapter", adapter, ->
-        events.source (_events) ->
-          adapter.client.deleteIndex(
-            "books"
-            (err, data) ->
-              console.log "Deleted index"
-              adapter.close()
-              _events.callback err, data
-          )
+      Suite.run "Elasticsearc Adapter", adapter, ->
+        adapter.client.indices.delete(index: "books")
+          .then (data) ->
+            console.log "Deleted index"
+            adapter.close()
+          , (err) ->
+            console.log "Error deleting index:", err
+            adapter.close()
