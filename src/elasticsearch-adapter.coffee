@@ -106,16 +106,13 @@ class Collection extends BaseCollection
     match "object", (query) ->
       @events.source (events) =>
         events.safely =>
-          @adapter.client.search(
-              @index, @type, {filter: {term: query}}
-            )
+          @adapter.client.get(@index, @type, query._id)
             .on "data", (data) -> 
               jsonData = JSON.parse(data)
               unless jsonData.error?
-                if jsonData.hits? and jsonData.hits.hits? and jsonData.hits.hits.length == 1
-                  result = jsonData.hits.hits[0]._source
-                  result._id = jsonData.hits.hits[0]._id
-                  result.score = jsonData.hits.hits[0]._score
+                if jsonData._source?
+                  result = jsonData._source
+                  result._id = jsonData._id
                 else
                   result = null
                 events.emit "success", result
