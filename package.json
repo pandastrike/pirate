@@ -18,7 +18,7 @@
     "coffee-script": "git://github.com/alubbe/coffee-script.git#efca28"
   },
   "scripts": {
-    "prepublish": "coffee -v --nodejs --harmony -o lib/ -c src/*.coffee"
+    "prepublish": "coffee --nodejs --harmony -o lib/ -c src/*.coffee"
   },
   "repository": {
     "type": "git",

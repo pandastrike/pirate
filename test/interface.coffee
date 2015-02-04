@@ -52,5 +52,7 @@ module.exports = async (adapter) ->
       yield books.delete key
       assert.equal (yield books.get key), null
 
+    yield adapter.close()
+
   catch error
     console.log error
