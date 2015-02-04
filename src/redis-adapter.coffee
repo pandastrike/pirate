@@ -28,33 +28,32 @@ class Adapter extends BaseAdapter
     @log ?= console.log
 
   connect: ->
-    # create client
-    @client = w.promise (resolve, reject) =>
+    w.promise (resolve, reject) =>
+      # create client
       client = redis.createClient(@configuration.port, @configuration.host)
         .on "ready", =>
           @log "RedisAdapter: Connected to Redis server @ #{@configuration.host}:#{@configuration.port}"
-          resolve liftAll(redis.RedisClient.prototype, liftCommands, client)
+          @client = liftAll(redis.RedisClient.prototype, liftCommands, client)
+          resolve @client
         .on "error", (err) =>
           @log "RedisAdapter: Error connecting to Redis server @ #{@configuration.host}:#{@configuration.port} - #{err}"
           reject err
-              
+
   collection: (name) ->
     Collection.make
       name: name
       adapter: @
-  
+
   close: async -> (yield @client).end()
-    
+
 class Collection extends BaseCollection
 
-  @make: async (options) -> 
-    options.client = yield options.adapter.client
-    new @ options
+  @make: (options) -> new @ options
 
-  constructor: ({@name,@adapter, @client}) ->
+  constructor: ({@name,@adapter}) ->
 
   find: async (keys...) ->
-    res = yield @client.hmget @name, keys
+    res = yield @adapter.client.hmget @name, keys
     res.map (item, index) -> 
       obj = null
       if item?
@@ -63,17 +62,17 @@ class Collection extends BaseCollection
       obj
 
   get: async (key) ->
-    res = yield @client.hget @name, key
+    res = yield @adapter.client.hget @name, key
     if res? then JSON.parse(res) else null
 
   put: (key,object) ->
-    @client.hset @name, key, JSON.stringify(object)
+    @adapter.client.hset @name, key, JSON.stringify(object)
 
   delete: (key) ->
-    @client.hdel @name, key
+    @adapter.client.hdel @name, key
 
   all: async ->
-    res = yield @client.hgetall @name
+    res = yield @adapter.client.hgetall @name
     data = []
     for key,value of res
       obj = JSON.parse(value)
@@ -82,7 +81,7 @@ class Collection extends BaseCollection
     data
     
   count: ->
-    @client.hlen @name
+    @adapter.client.hlen @name
 
 module.exports = 
   Adapter: Adapter
