@@ -1,5 +1,5 @@
+w = require "when"
 {type} = require "fairmont"
-{overload} = require "typely"
 {BaseAdapter,BaseCollection} = require ("./base-adapter")
 
 class Adapter extends BaseAdapter
@@ -10,57 +10,37 @@ class Adapter extends BaseAdapter
   constructor: (@configuration) ->
     super(@configuration)
     @database = {}
-    @events.emit "ready", @
+
+  connect: -> w @
 
   collection: (name) ->
-    @events.source (events) =>
-      @database[name] = Collection.make
-        collection: {}
-        events: @events
-        adapter: @
-        log: @log
-      events.emit "success", @database[name]
+    w @database[name] = Collection.make
+      collection: {}
+      adapter: @
+      logger: @logger
 
-  close: ->
+  close: -> w @
 
 class Collection extends BaseCollection
 
-  @make: (options) ->
-    new @ options
+  @make: (options) -> new @ options
 
-  constructor: ({@events,@collection,@adapter,@log}) ->
+  constructor: ({@collection,@adapter}) ->
 
-  find: overload (match, fail) ->
-    match "array", (keys) ->
-      @events.source (events) =>
-        values = keys.map (key) => @collection[key]
-        events.emit "success", values
-    match "string", (key) -> @get(key)
+  find: (keys...) -> w.all ((@get key) for key in keys)
 
-  get: (key) ->
-    @events.source (events) =>
-      events.emit "success", @collection[key]
+  get: (key) -> w @collection[key]
 
-  put: (key,object) ->
-    @events.source (events) =>
-      @collection[key] = object
-      events.emit "success", object
+  put: (key,object) -> w @collection[key] = object
 
   delete: (key) ->
-    @events.source (events) =>
-      object = @collection[key]
-      delete @collection[key]
-      events.emit "success"
+    old = @collection[key]
+    delete @collection[key]
+    w old
 
-  all: ->
-    @events.source (events) =>
-      values = (@collection[key] for key in Object.keys( @collection ))
-      events.emit "success", values
+  all: -> @find.apply @, (Object.keys @collection)
 
-  count: ->
-    @events.source (events) =>
-      events.emit "success",
-        Object.keys( @collection ).length
+  count: -> w (Object.keys @collection).length
 
 module.exports =
   Adapter: Adapter

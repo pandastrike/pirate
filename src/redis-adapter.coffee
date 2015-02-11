@@ -1,8 +1,18 @@
+w = require "when"
+async = (require "when/generator").lift
+{liftAll} = require "when/node"
 {type,merge} = require "fairmont"
-{overload} = require "typely"
 redis = require "redis"
 {BaseAdapter,BaseCollection} = require ("./base-adapter")
 
+# used to promisify RedisClient
+# see https://gist.github.com/briancavalier/9982742
+liftCommands = (proto, f, n) ->
+  if (require "redis/lib/commands").indexOf(n) >= 0
+    proto[n] = f
+  proto
+
+# default connection parameters
 defaults = 
   port: 6379
   host: "127.0.0.1"
@@ -15,97 +25,63 @@ class Adapter extends BaseAdapter
   constructor: (@configuration) ->
     @configuration = merge(defaults,@configuration)
     super(@configuration)
+    @log ?= console.log
 
-    # Make sure we convert exceptions into error events
-    @events.safely =>
-      @client = redis.createClient(@configuration.port, @configuration.host)
-      @client.on "ready", =>
-        @log "RedisAdapter: Connected to Redis server @ #{@configuration.host}:#{@configuration.port}"
-        @events.emit "ready", @
-      @client.on "error", (err) =>
-        @log "RedisAdapter: Error connecting to Redis server @ #{@configuration.host}:#{@configuration.port} - #{err}"
-        @events.emit "error", err
-              
+  connect: ->
+    w.promise (resolve, reject) =>
+      # create client
+      client = redis.createClient(@configuration.port, @configuration.host)
+        .on "ready", =>
+          @log "RedisAdapter: Connected to Redis server @ #{@configuration.host}:#{@configuration.port}"
+          @client = liftAll(redis.RedisClient.prototype, liftCommands, client)
+          resolve @client
+        .on "error", (err) =>
+          @log "RedisAdapter: Error connecting to Redis server @ #{@configuration.host}:#{@configuration.port} - #{err}"
+          reject err
+
   collection: (name) ->
-    @events.source (events) =>
-      events.emit "success", 
-        Collection.make
-          name: name
-          events: @events
-          adapter: @
-          log: @log
-  
-  close: -> @client.end()
-    
+    Collection.make
+      name: name
+      adapter: @
+
+  close: async -> (yield @client).end()
+
 class Collection extends BaseCollection
-  
-  @make: (options) ->
-    new @ options
 
-  constructor: ({@name,@events,@adapter,@log}) ->
+  @make: (options) -> new @ options
 
-  find: overload (match, fail) ->
-    
-    match "array", (keys) -> 
-      @events.source (events) =>
-        @adapter.client.hmget @name, keys, (err,res) =>
-          unless err?
-            data = res.map (item, index) -> 
-              obj = null
-              if item?
-                obj = JSON.parse(item)
-                obj._id = keys[index]
-              obj
-            events.emit "success", data
-          else
-            events.emit "error", err
-    match "string", (key) -> @get(key)
+  constructor: ({@name,@adapter}) ->
 
-  get: (key) ->
-    @events.source (events) =>
-      @adapter.client.hget @name, key, (err,res) =>
-        unless err?
-          data = if res? then JSON.parse(res) else null
-          events.emit "success", data
-        else
-          events.emit "error", err
+  find: async (keys...) ->
+    res = yield @adapter.client.hmget @name, keys
+    res.map (item, index) -> 
+      obj = null
+      if item?
+        obj = JSON.parse(item)
+        # obj._id = keys[index]
+      obj
+
+  get: async (key) ->
+    res = yield @adapter.client.hget @name, key
+    if res? then JSON.parse(res) else null
 
   put: (key,object) ->
-    @events.source (events) =>
-      @adapter.client.hset @name, key, JSON.stringify(object), (err,res) =>
-        unless err?
-          events.emit "success", object
-        else
-          events.emit "error", err
+    @adapter.client.hset @name, key, JSON.stringify(object)
 
   delete: (key) ->
-    @events.source (events) =>
-      @adapter.client.hdel @name, key, (err,res) =>
-        unless err?
-          events.emit "success"
-        else
-          events.emit "error", err
+    @adapter.client.hdel @name, key
 
-  all: ->
-    @events.source (events) =>
-      @adapter.client.hgetall @name, (err,res) =>
-        unless err?
-          data = []
-          for key,value of res
-            obj = JSON.parse(value)
-            obj._id = key
-            data.push(obj)
-          events.emit "success", data
-        else
-          events.emit "error", err
+  all: async ->
+    res = yield @adapter.client.hgetall @name
+    data = []
+    for key,value of res
+      obj = JSON.parse(value)
+      obj._id = key
+      data.push(obj)
+    data
     
   count: ->
-    @events.source (events) =>
-      @adapter.client.hlen @name, (err,res) =>
-        unless err?
-          events.emit "success", res
-        else
-          events.emit "error", err
+    @adapter.client.hlen @name
 
 module.exports = 
   Adapter: Adapter

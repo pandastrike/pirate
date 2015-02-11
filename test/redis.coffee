@@ -1,13 +1,7 @@
-Suite = require "./interface"
+tests = require "./interface"
 {Redis} = require "../src/index"
-{EventChannel} = require "mutual"
 
-events = new EventChannel
-
-adapter = new Redis.Adapter
-  events: events
+tests new Redis.Adapter
   port: 6379
   host: "127.0.0.1"
 
-Suite.run "Redis Adapter", adapter, ->
-  adapter.close()
