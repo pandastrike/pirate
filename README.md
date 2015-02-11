@@ -1,10 +1,10 @@
 # Argh! What's This?
 
-Pirate provides a simple key-value storage interface with adapters for different storage systems. Pirate currently supports MongoDB, Elasticsearch, Redis and in-memory storage.
+Pirate provides a simple key-value storage interface with adapters for different storage systems. Pirate currently supports Redis and in-memory storage, with MongoDB and ElasticSearch adapters under development.
 
 ## Example
 
-Here's a simple program to `put` and `get` and object from MongoDB.
+Here's a simple program to `put` and `get` and object from Redis.
 
 ```coffee
 {call} = require "when/generator"
