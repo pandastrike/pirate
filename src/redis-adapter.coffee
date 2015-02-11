@@ -13,15 +13,15 @@ liftCommands = (proto, f, n) ->
   proto
 
 # default connection parameters
-defaults = 
+defaults =
   port: 6379
   host: "127.0.0.1"
 
 class Adapter extends BaseAdapter
-  
+
   @make: (configuration) ->
     new @ configuration
-  
+
   constructor: (@configuration) ->
     @configuration = merge(defaults,@configuration)
     super(@configuration)
@@ -54,7 +54,7 @@ class Collection extends BaseCollection
 
   find: async (keys...) ->
     res = yield @adapter.client.hmget @name, keys
-    res.map (item, index) -> 
+    res.map (item, index) ->
       obj = null
       if item?
         obj = JSON.parse(item)
@@ -79,10 +79,10 @@ class Collection extends BaseCollection
       obj._id = key
       data.push(obj)
     data
-    
+
   count: ->
     @adapter.client.hlen @name
 
-module.exports = 
+module.exports =
   Adapter: Adapter
   Collection: Collection

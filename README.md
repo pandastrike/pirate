@@ -9,8 +9,8 @@ Pirate provides a simple key-value storage interface with adapters for different
 Here's a simple program to `put` and `get` and object from Redis.
 
 ```coffee
+assert = require "asssert"
 {call} = require "when/generator"
-{log} = console
 {Redis} = require "pirate"
 
 adapter = new Redis.Adapter
