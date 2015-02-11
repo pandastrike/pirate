@@ -1,10 +1,13 @@
 {extname} = require "path"
 {readdir} = require "fairmont"
 
-allow = (file) -> extname(file) == ".coffee" and (file != "index.coffee")
+# TODO: we should probably NOT run the tests and
+# just issue a warning if the associated database
+# connection fails...
 
-# TODO: for this to work, we'd need to start the associated database
-# first, before running the tests
+require "./memory.coffee"
+require "./redis.coffee"
 
-for file in readdir(__dirname) when allow file
-  require "./#{file}"
+# TODO: we don't support these yet for the ES6 version
+# require "./mongo.coffee"
+# require "./elasticsearch.coffee"

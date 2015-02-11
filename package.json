@@ -1,23 +1,21 @@
 {
   "name": "pirate",
-  "version": "0.9.11",
-  "description": "A simple storage interface with adapters for different storage systems",
+  "version": "1.0.0-alpha-01",
+  "description": "A simple key-value storage interface with adapters for different databases",
   "main": "lib/index.js",
   "directories": {
     "test": "test"
   },
   "dependencies": {
-    "elasticsearchclient": "0.5.x",
     "fairmont": "0.4.x",
-    "mongodb": "1.2.x",
-    "mutual": "0.4.x",
     "redis": "~0.10.1",
     "when": "^3.4.6"
   },
   "devDependencies": {
-    "coffee-script": "git://github.com/alubbe/coffee-script.git#efca28"
+    "coffee-script": "^1.9.0"
   },
   "scripts": {
+    "test": "coffee --nodejs --harmony test/index.coffee",
     "prepublish": "coffee --nodejs --harmony -o lib/ -c src/*.coffee"
   },
   "repository": {
@@ -25,6 +23,8 @@
     "url": "git://github.com/dyoder/pirate.git"
   },
   "keywords": [
+    "key-value",
+    "store",
     "storage",
     "interface",
     "mongo",
