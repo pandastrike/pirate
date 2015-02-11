@@ -30,6 +30,9 @@ module.exports = async (adapter) ->
       books = yield adapter.collection "books"
       assert.equal books.put?, true
 
+    yield test "New collection is empty", async ->
+      assert.equal (yield books.all()).length, 0
+
     yield test "Put an object into a collection", async ->
       yield books.put key, book
 

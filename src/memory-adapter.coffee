@@ -38,7 +38,7 @@ class Collection extends BaseCollection
     delete @collection[key]
     w old
 
-  all: -> @find (Object.keys @collection)
+  all: -> @find.apply @, (Object.keys @collection)
 
   count: -> w (Object.keys @collection).length
 
