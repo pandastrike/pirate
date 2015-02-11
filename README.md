@@ -21,50 +21,37 @@ The benefits of this approach are:
 Here's a simple program to `put` and `get` and object from MongoDB.
 
 ```coffee
+{call} = require "when/generator"
 {log} = console
-{Mongo} = require "pirate"
-{EventChannel} = require "mutual"
+{Redis} = require "pirate"
 
-# Create the top-level events object
-events = new EventChannel
-
-# Default error handler just logs the error
-events.on "error", (error) -> log error
-
-# Create an adapter, passing in the events object
-Mongo.Adapter.make
-  events: events
-  port: 27018
+adapter = new Redis.Adapter
+  port: 6379
   host: "127.0.0.1"
-  database: "foo"
-  options:
-    auto_reconnect: true
 
-# When the adapter is ready, we can do stuff
-events.on "ready", (adapter) ->
+book =
+  key: "war-and-peace"
+  title: "War and Peace"
+  author: "Leo Tolstoy"
+  published: "1969"
 
-  # First, let's add a second event handler to 
-  # close the connection and exit
-  events.on "error", ->
-    adapter.close
-    process.exit -1
+call ->
+  # connect to the data store
+  yield adapter.connect()
 
-  # Okay, let's get the collection we're going to use
-  (adapter.collection "bar")
+  # get a collection
+  books = yield adapter.collection "books"
 
-  # Once we have the collection, let's put something
-  .on "success", (collection) ->
-    (collection.put "baz", baz: "hello")
+  # store things in it
+  yield books.put book.key, book
 
-    # If the put works, try getting the same thing back out
-    .on "success", (object) ->
-      (collection.get "baz")
+  # get them back out
+  assert.deepEqual (yield books.get book.key), book
 
-      # If the get works, show the result and close the 
-      # adapter because we're done!
-      .on "success", (object) ->
-        log object
-        adapter.close()
+  # update them
+  yield books.patch book.key, published: "1869"
+  book.published = "1869"
+  assert.deepEqual (yield books.get book.key), book
 ```
 
 # Adapter API
@@ -83,9 +70,4 @@ The elements of the interface are:
 
 * `count` Returns a count of all the objects in the collection.
 
-All API methods actually return an `EventChannel` object. The `success` event is how a value is ultimately returned, if necessary.
-
-
-
-          
-
+All API methods return an Promise object.

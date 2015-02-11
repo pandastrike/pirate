@@ -1,6 +1,6 @@
 {
   "name": "pirate",
-  "version": "1.0.0-alpha-01",
+  "version": "1.0.0-alpha-02",
   "description": "A simple key-value storage interface with adapters for different databases",
   "main": "lib/index.js",
   "directories": {
