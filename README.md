@@ -2,6 +2,8 @@
 
 Pirate provides a simple key-value storage interface with adapters for different storage systems. Pirate currently supports Redis and in-memory storage, with MongoDB and ElasticSearch adapters under development.
 
+> **Important** Pirate 1.0 is backwards incompatible with Pirate 0.9.x due to the change to an ES6-friendly Promise-based interfaces.
+
 ## Example
 
 Here's a simple program to `put` and `get` and object from Redis.
