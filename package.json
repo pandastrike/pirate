@@ -8,7 +8,7 @@
   },
   "dependencies": {
     "elasticsearchclient": "0.5.x",
-    "fairmont": "0.4.x",
+    "fairmont": "1.0.0-alpha-09",
     "mongodb": "1.2.x",
     "mutual": "0.4.x",
     "redis": "~0.10.1",
