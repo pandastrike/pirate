@@ -29,8 +29,7 @@ class Collection extends BaseCollection
 
   find: (keys...) -> w.all ((@get key) for key in keys)
 
-  get: (key) ->
-    w clone @collection[key]
+  get: (key) -> w clone @collection[key]
 
   put: (key,object) -> w @collection[key] = object
 
