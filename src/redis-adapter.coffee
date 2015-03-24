@@ -1,7 +1,7 @@
 w = require "when"
 async = (require "when/generator").lift
 {liftAll} = require "when/node"
-{type,merge} = require "fairmont"
+{merge} = require "fairmont"
 redis = require "redis"
 {BaseAdapter,BaseCollection} = require ("./base-adapter")
 

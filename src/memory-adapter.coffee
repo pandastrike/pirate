@@ -1,5 +1,5 @@
 w = require "when"
-{type} = require "fairmont"
+{clone} = require "fairmont"
 {BaseAdapter,BaseCollection} = require ("./base-adapter")
 
 class Adapter extends BaseAdapter
@@ -29,7 +29,7 @@ class Collection extends BaseCollection
 
   find: (keys...) -> w.all ((@get key) for key in keys)
 
-  get: (key) -> w @collection[key]
+  get: (key) -> w clone @collection[key]
 
   put: (key,object) -> w @collection[key] = object
 
