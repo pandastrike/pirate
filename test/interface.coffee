@@ -40,6 +40,13 @@ module.exports = async (adapter) ->
       _book = yield books.get key
       assert.deepEqual book, _book
 
+    yield test "Count objects in collection", async ->
+      assert.equal 1, yield books.count()
+
+    yield test "Calling collection again returns same collection", async ->
+      _books = yield adapter.collection "books"
+      assert.equal 1, yield _books.count()
+
     yield test "Uncommitted changes are not stored", async ->
       _book = yield books.get key
       _book.published = "2069"
