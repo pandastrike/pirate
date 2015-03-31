@@ -14,7 +14,7 @@ class Adapter extends BaseAdapter
   connect: -> w @
 
   collection: (name) ->
-    w @database[name] = Collection.make
+    w @database[name] ?= Collection.make
       collection: {}
       adapter: @
       logger: @logger

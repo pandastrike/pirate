@@ -40,7 +40,7 @@ class Adapter extends BaseAdapter
           reject err
 
   collection: (name) ->
-    Collection.make
+    w Collection.make
       name: name
       adapter: @
 
