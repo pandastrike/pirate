@@ -7,7 +7,3 @@
 
 require "./memory.coffee"
 require "./redis.coffee"
-
-# TODO: we don't support these yet for the ES6 version
-# require "./mongo.coffee"
-# require "./elasticsearch.coffee"
