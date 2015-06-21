@@ -33,8 +33,6 @@ class Adapter extends BaseAdapter
   connect: ->
     w.promise (resolve, reject) =>
       # create client
-      extra = @configuration
-      delete extra,
       client = redis.createClient(@configuration.port, @configuration.host, @options)
         .on "ready", =>
           @log "RedisAdapter: Connected to Redis server @ #{@configuration.host}:#{@configuration.port}"
