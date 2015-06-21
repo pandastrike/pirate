@@ -1,7 +1,7 @@
 w = require "when"
 async = (require "when/generator").lift
 {liftAll} = require "when/node"
-{type,merge} = require "fairmont"
+{type, merge} = require "fairmont"
 redis = require "redis"
 {BaseAdapter,BaseCollection} = require ("./base-adapter")
 
@@ -27,10 +27,15 @@ class Adapter extends BaseAdapter
     super(@configuration)
     @log ?= console.log
 
+    @options = {}
+    @options[k] = v for k, v of @configuration when k != "port" && k != "host"
+
   connect: ->
     w.promise (resolve, reject) =>
       # create client
-      client = redis.createClient(@configuration.port, @configuration.host)
+      extra = @configuration
+      delete extra,
+      client = redis.createClient(@configuration.port, @configuration.host, @options)
         .on "ready", =>
           @log "RedisAdapter: Connected to Redis server @ #{@configuration.host}:#{@configuration.port}"
           @client = liftAll(redis.RedisClient.prototype, liftCommands, client)
