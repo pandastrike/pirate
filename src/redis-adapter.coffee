@@ -66,10 +66,22 @@ class Collection extends BaseCollection
 
   get: async (key) ->
     res = yield @adapter.client.hget @name, key
-    if res? then JSON.parse(res) else null
+    if res?
+      # If we're pulling a buffer, no need to parse.
+      if @adapter.options.return_buffers
+        return res
+      else
+        return JSON.parse(res)
+    else
+      return null
+
 
   put: (key,object) ->
-    @adapter.client.hset @name, key, JSON.stringify(object)
+    if @adapter.options.return_buffers
+      # If we're storing a buffer, don't stringify.
+      @adapter.client.hset @name, key, object
+    else
+      @adapter.client.hset @name, key, JSON.stringify(object)
 
   delete: (key) ->
     @adapter.client.hdel @name, key
