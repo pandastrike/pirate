@@ -1,7 +1,7 @@
 w = require "when"
 async = (require "when/generator").lift
 {liftAll} = require "when/node"
-{type,merge} = require "fairmont"
+{type, merge} = require "fairmont"
 redis = require "redis"
 {BaseAdapter,BaseCollection} = require ("./base-adapter")
 
@@ -27,10 +27,13 @@ class Adapter extends BaseAdapter
     super(@configuration)
     @log ?= console.log
 
+    @options = {}
+    @options[k] = v for k, v of @configuration when k != "port" && k != "host"
+
   connect: ->
     w.promise (resolve, reject) =>
       # create client
-      client = redis.createClient(@configuration.port, @configuration.host)
+      client = redis.createClient(@configuration.port, @configuration.host, @options)
         .on "ready", =>
           @log "RedisAdapter: Connected to Redis server @ #{@configuration.host}:#{@configuration.port}"
           @client = liftAll(redis.RedisClient.prototype, liftCommands, client)
@@ -63,10 +66,22 @@ class Collection extends BaseCollection
 
   get: async (key) ->
     res = yield @adapter.client.hget @name, key
-    if res? then JSON.parse(res) else null
+    if res?
+      # If we're pulling a buffer, no need to parse.
+      if @adapter.options.return_buffers
+        return res
+      else
+        return JSON.parse(res)
+    else
+      return null
+
 
   put: (key,object) ->
-    @adapter.client.hset @name, key, JSON.stringify(object)
+    if @adapter.options.return_buffers
+      # If we're storing a buffer, don't stringify.
+      @adapter.client.hset @name, key, object
+    else
+      @adapter.client.hset @name, key, JSON.stringify(object)
 
   delete: (key) ->
     @adapter.client.hdel @name, key
